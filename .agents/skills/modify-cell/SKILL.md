@@ -10,6 +10,7 @@ description: Modify an existing cell in the Agent-First Go architecture. Use whe
 ```bash
 task context ID=<cell-id>      # read the cell's context pack
 task deps ID=<cell-id>         # check who depends on this cell
+task scope ID=<cell-id>        # declare the allowed edit boundary
 ```
 
 The `task deps` output shows:
@@ -61,6 +62,7 @@ If cells appear in "Dependents", changing the interface may break them.
 ```bash
 task index          # regenerate index (hash changes)
 task impact         # see full blast radius
+task verify-scope ID=<cell-id> # reject undeclared edits
 task test           # full test suite
 task doctor         # architecture health check
 ```
@@ -70,4 +72,7 @@ task doctor         # architecture health check
 - **Never modify another cell's internal files.** Only use its interface.
 - **Never modify `wiring.go` from within a cell.** Wiring is centralized.
 - **Always run `task impact` after changes.** It catches under-tested blast radius.
+- **Expand scope deliberately.** For a sibling cell or shared surface, pass
+  only the needed exact IDs or `@contracts`, `@platform`, and `@wiring` through
+  `WITH=`; dependencies and dependents are never implicit authorization.
 - **Always run `task doctor` before committing.** It catches architecture violations.

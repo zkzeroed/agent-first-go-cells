@@ -5,27 +5,37 @@
   },
   {
     "label": "Agent: Changed",
-    "command": "task changed"
+    "command": "task changed",
+    "save": "all"
   },
   {
     "label": "Agent: Ready",
-    "command": "task ready"
+    "command": "task ready",
+    "save": "all"
   },
   {
     "label": "Agent: Doctor",
-    "command": "task doctor"
+    "command": "task doctor",
+    "save": "all"
   },
   {
     "label": "Agent: Quick Check",
-    "command": "task quick-check"
+    "command": "task quick-check",
+    "save": "all"
   },
   {
     "label": "Agent: Cells",
     "command": "task cells"
   },
   {
+    "label": "Agent: Index",
+    "command": "task index",
+    "save": "all"
+  },
+  {
     "label": "Agent: Impact",
-    "command": "task impact"
+    "command": "task impact",
+    "save": "all"
   },
   {
     "label": "Agent: Setup",
@@ -33,7 +43,8 @@
   },
   {
     "label": "Agent: Test",
-    "command": "task test"
+    "command": "task test",
+    "save": "all"
   },
   {
     "label": "Reference: Cells",
@@ -41,14 +52,17 @@
   },
   {
     "label": "Reference: Index",
-    "command": "task index ROOT=examples/reference-project"
+    "command": "task index ROOT=examples/reference-project",
+    "save": "all"
   },
   {
     "label": "Reference: Impact",
-    "command": "task impact ROOT=examples/reference-project"
+    "command": "task impact ROOT=examples/reference-project",
+    "save": "all"
   },
   {
     "label": "Reference: Ready",
-    "command": "task ready ROOT=examples/reference-project"
+    "command": "task ready ROOT=examples/reference-project",
+    "save": "all"
   }
 ]

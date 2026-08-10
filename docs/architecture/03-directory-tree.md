@@ -4,6 +4,7 @@
 AGENTS.md                 root operating guide
 Taskfile.yml              executable agent workflow
 .agents/skills/           project-local task guidance
+.vscode/                  optional VS Code tasks, settings, and recommendations
 internal/
   app/wiring.go           explicit composition root
   cells/<id>/
@@ -14,7 +15,7 @@ internal/
   contracts/              cross-cutting contracts only
   platform/               concrete infrastructure
 policy/imports.yaml       enforced internal import policy
-scripts/                  navigation and guardrail tools
+tools/agent/              agent navigation, guardrail, and scaffold tools
 gen/cells.json            generated v2 cell index
 gen/context/              generated bounded context packs
 docs/architecture/        design and operating references

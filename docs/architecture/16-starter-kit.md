@@ -1,6 +1,6 @@
 # 16. Starter Kit
 
-Use this repository as the starter kit. The executable templates are `Taskfile.yml`, `scripts/new-cell.sh`, and `scripts/new-domain.sh`; they are authoritative and intentionally not duplicated here.
+Use this repository as the starter kit. The executable templates are `Taskfile.yml`, `tools/agent/new-cell.sh`, and `tools/agent/new-domain.sh`; they are authoritative and intentionally not duplicated here.
 
 ## Minimum bootstrap
 
@@ -10,7 +10,7 @@ Taskfile.yml              executable workflow
 .agents/skills/           task-specific instructions
 internal/cells/           capability cells
 policy/imports.yaml       internal import policy
-scripts/                  architecture tooling
+tools/agent/              architecture tooling
 gen/cells.json            generated v2 cell index
 ```
 

@@ -93,11 +93,19 @@ task new-cell ID=users/user-register
 ```bash
 task context ID=user-authenticate   # Read context pack first
 task deps ID=user-authenticate      # Check blast radius
+task scope ID=user-authenticate     # Declare the permitted edit boundary
 # ... make changes (inside-out if touching multiple layers) ...
 task changed                       # Status + impact (what did I touch?)
+task verify-scope ID=user-authenticate # Reject undeclared edits
 task quick-check                   # Fast post-edit validation
 task test-cell ID=user-authenticate
 ```
+
+`scope` permits only the selected cell (not nested child cells), its generated
+context pack, and the generated index. For intentional cross-cell or shared
+integration work, declare each additional boundary explicitly, for example
+`task verify-scope ID=user-authenticate WITH=profiles,@wiring`. Dependencies
+and dependents never expand scope implicitly.
 
 ### Find which cell handles a concept
 
@@ -112,8 +120,10 @@ task orient                  # First command: cells + doctor + status
 task find-cell QUERY=<topic> # Find the right cell
 task context ID=<id>         # Read its context pack
 task deps ID=<id>            # Check blast radius
+task scope ID=<id>           # Declare permitted edit paths
 # ... edit inside-out ...
 task changed                 # Status + impact
+task verify-scope ID=<id>    # Confirm no unrelated files changed
 task ready                   # Pre-handoff: doctor + impact + test + status
 ```
 
@@ -143,10 +153,11 @@ task quick-check      # structure + policy + manifests + index (no tests)
 
 ### Task environment
 
-Task commands place Go and ccache state in a writable temporary directory by
-default. This keeps the standard validation loop reliable in agent sandboxes
-with read-only home directories. Set `GOCACHE` or `CCACHE_DIR` explicitly when
-your environment needs a different cache location.
+Task commands place Go, ccache, and golangci-lint state in a writable temporary
+directory by default. This keeps the standard validation loop reliable in agent
+sandboxes with read-only home directories. Set `GOCACHE`, `CCACHE_DIR`, or
+`GOLANGCI_LINT_CACHE` explicitly when your environment needs a different cache
+location.
 
 ## Git Hooks
 
@@ -185,8 +196,17 @@ adopts that IDE.
 
 In a trusted Zed worktree, this repository's `AGENTS.md` and `.agents/skills/`
 are available to the Zed Agent. Use `.zed/tasks.json` for the root workflow or
-the `Reference:` tasks for `examples/reference-project`; `.zed/settings.json`
-contains only project editing settings.
+the `Reference:` tasks for `examples/reference-project`; validation tasks save
+open buffers first. `.zed/settings.json` keeps `gen/` visible because its cell
+index and context packs are part of the navigation contract.
+
+### Visual Studio Code
+
+In VS Code, use `.vscode/tasks.json` through **Terminal: Run Task**. Its
+input-backed cell commands preserve the Taskfile's exact `ID` and optional
+`WITH` scope contract. `.vscode/settings.json` enables root and cell-local
+`AGENTS.md` discovery; VS Code also discovers the existing `.agents/skills/`
+directly. The committed configuration recommends Go and YAML support only.
 
 ### Available Skills
 
@@ -204,6 +224,7 @@ contains only project editing settings.
 task cells                    # Orient: what cells exist?
 task find-cell QUERY=<topic>  # Find the right cell
 task context ID=<id>          # Read its context pack
+task scope ID=<id>            # Confirm the edit boundary
 ```
 
 ### After making changes
@@ -211,6 +232,7 @@ task context ID=<id>          # Read its context pack
 ```bash
 task test-cell ID=<id>        # Test the cell you changed
 task impact                   # Check what else is affected
+task verify-scope ID=<id>     # Confirm scope before handoff
 task doctor                   # Verify architecture invariants
 ```
 

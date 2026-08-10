@@ -9,8 +9,10 @@ task orient
 task find-cell QUERY=<topic>
 task context ID=<cell-id>
 task deps ID=<cell-id>
+task scope ID=<cell-id>
 # edit
 task changed
+task verify-scope ID=<cell-id>
 task ready
 ```
 
@@ -29,6 +31,8 @@ task ready
 - No `init()` functions.
 - Internal imports obey `policy/imports.yaml`; cell dependencies cross only `api` packages.
 - Generated metadata is never manually edited.
+- `task verify-scope` rejects task edits outside the explicitly declared cell
+  and optional integration scope.
 
 ## Reference
 

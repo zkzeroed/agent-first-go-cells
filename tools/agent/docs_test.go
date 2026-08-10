@@ -1,4 +1,4 @@
-package scripts_test
+package agent_test
 
 import (
 	"os"

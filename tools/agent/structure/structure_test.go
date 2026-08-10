@@ -40,7 +40,7 @@ func projectRoot() string {
 // shouldSkip returns true for files that should not be checked for size/function limits.
 func shouldSkip(path string) bool {
 	return strings.HasPrefix(path, "vendor/") ||
-		strings.HasPrefix(path, "scripts/") ||
+		strings.HasPrefix(path, "tools/agent/") ||
 		strings.HasSuffix(path, "_test.go")
 }
 

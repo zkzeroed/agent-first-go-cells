@@ -58,6 +58,26 @@ func FindAll() ([]Manifest, error) {
 // the returned collection remain relative to root so generated indexes are
 // portable within the project they describe.
 func FindAllAt(root string) ([]Manifest, error) {
+	return FindAllAtWith(root, nil)
+}
+
+// FindAllAtWith reads manifests, adds extra manifests, then validates their
+// combined dependency graph. Callers use extras only for removed cells that
+// must remain visible while analyzing a Git diff.
+func FindAllAtWith(root string, extras []Manifest) ([]Manifest, error) {
+	results, err := readAllAt(root)
+	if err != nil {
+		return nil, err
+	}
+	results = append(results, extras...)
+	sort.Slice(results, func(i, j int) bool { return results[i].ID < results[j].ID })
+	if err := Validate(results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func readAllAt(root string) ([]Manifest, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return nil, fmt.Errorf("resolve project root: %w", err)
@@ -111,9 +131,6 @@ func FindAllAt(root string) ([]Manifest, error) {
 	}
 
 	sort.Slice(results, func(i, j int) bool { return results[i].ID < results[j].ID })
-	if err := Validate(results); err != nil {
-		return nil, err
-	}
 	return results, nil
 }
 

@@ -12,6 +12,7 @@ task cells                        # list all cells with status
 task find-cell QUERY=payment      # find cell by concept
 task context ID=user-authenticate # read a cell's context pack
 task deps ID=user-authenticate    # see dependency graph
+task scope ID=user-authenticate   # print the explicit edit boundary
 ```
 
 For the reference project, root-capable tools accept `ROOT=examples/reference-project`:
@@ -50,7 +51,12 @@ This searches cell IDs, purposes, and AGENTS.md content. More precise than grep.
 ```bash
 task deps ID=user-authenticate    # who depends on this cell?
 task impact                       # direct owners and transitive downstream cells
+task scope ID=user-authenticate   # owned files and explicit integration scope
 ```
+
+Before handoff, run `task verify-scope ID=<id>`. Add only explicit sibling
+cells or `@contracts`, `@platform`, and `@wiring` through `WITH=` when the task
+crosses those boundaries.
 
 ### Reading a cell's full context
 

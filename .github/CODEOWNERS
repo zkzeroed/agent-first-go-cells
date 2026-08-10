@@ -7,7 +7,7 @@
 /.agents/ @sploitzberg
 /.devin/ @sploitzberg
 /policy/ @sploitzberg
-/scripts/ @sploitzberg
+/tools/agent/ @sploitzberg
 /docs/architecture/ @sploitzberg
 /AGENTS.md @sploitzberg
 /.rules @sploitzberg

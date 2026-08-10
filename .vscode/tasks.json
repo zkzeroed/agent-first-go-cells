@@ -1,0 +1,167 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Agent: Orient",
+      "type": "process",
+      "command": "task",
+      "args": ["orient"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Changed",
+      "type": "process",
+      "command": "task",
+      "args": ["changed"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Ready",
+      "type": "process",
+      "command": "task",
+      "args": ["ready"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Doctor",
+      "type": "process",
+      "command": "task",
+      "args": ["doctor"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Quick Check",
+      "type": "process",
+      "command": "task",
+      "args": ["quick-check"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Cells",
+      "type": "process",
+      "command": "task",
+      "args": ["cells"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Index",
+      "type": "process",
+      "command": "task",
+      "args": ["index"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Impact",
+      "type": "process",
+      "command": "task",
+      "args": ["impact"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Test",
+      "type": "process",
+      "command": "task",
+      "args": ["test"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Agent: Lint",
+      "type": "process",
+      "command": "task",
+      "args": ["lint"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Setup",
+      "type": "process",
+      "command": "task",
+      "args": ["setup"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Find Cell",
+      "type": "process",
+      "command": "task",
+      "args": ["find-cell", "QUERY=${input:query}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Context",
+      "type": "process",
+      "command": "task",
+      "args": ["context", "ID=${input:cellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Dependencies",
+      "type": "process",
+      "command": "task",
+      "args": ["deps", "ID=${input:cellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Scope",
+      "type": "process",
+      "command": "task",
+      "args": ["scope", "ID=${input:cellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Verify Scope",
+      "type": "process",
+      "command": "task",
+      "args": ["verify-scope", "ID=${input:cellId}", "WITH=${input:scopeWith}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: New Cell",
+      "type": "process",
+      "command": "task",
+      "args": ["new-cell", "ID=${input:newCellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "query",
+      "type": "promptString",
+      "description": "Concept or behavior to find",
+      "default": ""
+    },
+    {
+      "id": "cellId",
+      "type": "promptString",
+      "description": "Exact cell ID",
+      "default": ""
+    },
+    {
+      "id": "scopeWith",
+      "type": "promptString",
+      "description": "Optional additional scope: comma-separated cell IDs and/or @contracts, @platform, @wiring",
+      "default": ""
+    },
+    {
+      "id": "newCellId",
+      "type": "promptString",
+      "description": "New cell ID in kebab-case, optionally domain/action",
+      "default": ""
+    }
+  ]
+}

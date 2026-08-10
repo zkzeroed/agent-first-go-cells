@@ -8,14 +8,16 @@ vars:
   GOIMPORTS_VERSION: v0.48.0
   DEFAULT_GOCACHE: '{{.TMPDIR | default "/tmp"}}/go-agent-first-arch/go-build'
   DEFAULT_CCACHE_DIR: '{{.TMPDIR | default "/tmp"}}/go-agent-first-arch/ccache'
+  DEFAULT_GOLANGCI_LINT_CACHE: '{{.TMPDIR | default "/tmp"}}/go-agent-first-arch/golangci-lint'
 
 silent: false
 
-# Keep Go and ccache state out of a possibly read-only home directory. Callers
-# can still supply GOCACHE or CCACHE_DIR explicitly when they need their own.
+# Keep Go, ccache, and golangci-lint state out of a possibly read-only home
+# directory. Callers can still supply their own cache locations explicitly.
 env:
   GOCACHE: '{{.GOCACHE | default .DEFAULT_GOCACHE}}'
   CCACHE_DIR: '{{.CCACHE_DIR | default .DEFAULT_CCACHE_DIR}}'
+  GOLANGCI_LINT_CACHE: '{{.GOLANGCI_LINT_CACHE | default .DEFAULT_GOLANGCI_LINT_CACHE}}'
 
 tasks:
   default:
@@ -81,7 +83,7 @@ tasks:
           if command -v "$tool" >/dev/null 2>&1; then
             case "$tool" in
               go) version="$(go version)" ;;
-              goimports) version="$(go version -m \"$(command -v goimports)\" 2>/dev/null | awk '$1 == \"mod\" { print $3; exit }')"; version="${version:-unknown}" ;;
+              goimports) version="$(go version -m "$(command -v goimports)" 2>/dev/null | awk '$1 == "mod" { print $3; exit }')"; version="${version:-unknown}" ;;
               *) version="$("$tool" --version 2>&1 | head -1)" ;;
             esac
             echo "  ✓ $tool ($version)"
@@ -135,7 +137,7 @@ tasks:
     desc: Run bootstrap unit and tooling tests (fast, no external deps)
     cmds:
       - |
-        for dir in internal pkg scripts; do
+        for dir in internal pkg tools/agent; do
           if [ -d "$dir" ]; then
             go test -race -count=1 -short ./$dir/...
           fi
@@ -157,7 +159,7 @@ tasks:
   fuzz:
     desc: "Bounded manifest-parser fuzz test. Optional: FUZZ_TIME=30s"
     cmds:
-      - go test -fuzz=FuzzParse -fuzztime={{.FUZZ_TIME | default "10s"}} -parallel=1 ./scripts/manifest
+      - go test -fuzz=FuzzParse -fuzztime={{.FUZZ_TIME | default "10s"}} -parallel=1 ./tools/agent/manifest
 
   test-cell:
     desc: "Run tests for a specific cell. Usage: task test-cell ID=user-authenticate"
@@ -183,7 +185,7 @@ tasks:
     desc: Enforce max file size (300 LOC)
     cmds:
       - |
-        find . -name '*.go' -not -path './vendor/*' -not -path './scripts/*' -not -name '*_test.go' |
+        find . -name '*.go' -not -path './vendor/*' -not -path './tools/agent/*' -not -name '*_test.go' |
         xargs wc -l |
         awk '$1 > 300 && $2 != "total" {print "FILE TOO LARGE:", $2, "("$1" lines)"; exit 1}'
       - echo "✓ All files within size limits"
@@ -191,61 +193,82 @@ tasks:
   check-manifests:
     desc: Validate all cell.yaml manifests
     cmds:
-      - go run ./scripts/index/ --json >/dev/null
+      - go run ./tools/agent/index/ --json >/dev/null
       - echo "✓ All manifests valid"
 
   index:
     desc: "Regenerate indexes. Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/index/ --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/index/ --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes regenerated"
 
   check-index:
     desc: "Verify indexes are fresh. Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/index/ --check --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/index/ --check --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes are fresh"
 
   index-json:
     desc: "Output index JSON. Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/index/ --json --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/index/ --json --root "{{.ROOT | default "."}}"
 
   impact:
     desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/impact/ --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/impact/ --root "{{.ROOT | default "."}}"
 
   impact-json:
     desc: "Show affected cells for changed files as JSON. Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/impact/ --json --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/impact/ --json --root "{{.ROOT | default "."}}"
+
+  scope:
+    desc: "Print the explicit pre-edit boundary for a cell. Usage: task scope ID=user-authenticate"
+    requires:
+      vars: [ID]
+    env:
+      SCOPE_ROOT: '{{.ROOT | default "."}}'
+      SCOPE_ID: '{{.ID}}'
+    cmds:
+      - go run ./tools/agent/scope/ --root "$SCOPE_ROOT" "$SCOPE_ID"
+
+  verify-scope:
+    desc: "Fail if changes exceed a declared cell scope. Optional: WITH=users,@wiring"
+    requires:
+      vars: [ID]
+    env:
+      SCOPE_ROOT: '{{.ROOT | default "."}}'
+      SCOPE_WITH: '{{.WITH | default ""}}'
+      SCOPE_ID: '{{.ID}}'
+    cmds:
+      - go run ./tools/agent/scope/ --verify --root "$SCOPE_ROOT" --with "$SCOPE_WITH" "$SCOPE_ID"
 
   new-cell:
     desc: "Scaffold a new cell directory. Usage: task new-cell ID=user-authenticate"
     requires:
       vars: [ID]
     cmds:
-      - ./scripts/new-cell.sh {{.ID}}
+      - ./tools/agent/new-cell.sh {{.ID}}
 
   scaffold-domain:
     desc: "Scaffold a domain cell with sub-action support. Usage: task scaffold-domain ID=users"
     requires:
       vars: [ID]
     cmds:
-      - ./scripts/new-domain.sh {{.ID}}
+      - ./tools/agent/new-domain.sh {{.ID}}
 
   validate-cell:
     desc: "Run cell's declared validation commands. Usage: task validate-cell ID=user-authenticate"
     requires:
       vars: [ID]
     cmds:
-      - go run ./scripts/validate-cell/ {{.ID}}
+      - go run ./tools/agent/validate-cell/ {{.ID}}
 
   policy:
     desc: Validate import policy
     cmds:
-      - go run ./scripts/imports/
+      - go run ./tools/agent/imports/
 
   vuln:
     desc: Run govulncheck
@@ -271,38 +294,38 @@ tasks:
   structure-test:
     desc: Run architecture invariant tests
     cmds:
-      - go test -run "Test(Cell|No|Files|Every)" ./scripts/structure/...
+      - go test -run "Test(Cell|No|Files|Every)" ./tools/agent/structure/...
 
   cells:
     desc: "List cells. Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/cells/ --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/cells/ --root "{{.ROOT | default "."}}"
 
   cells-json:
     desc: "List cells as JSON. Optional: ROOT=examples/reference-project"
     cmds:
-      - go run ./scripts/cells/ --json --root "{{.ROOT | default "."}}"
+      - go run ./tools/agent/cells/ --json --root "{{.ROOT | default "."}}"
 
   deps:
     desc: "Show dependencies. Optional: ROOT=examples/reference-project"
     requires:
       vars: [ID]
     cmds:
-      - go run ./scripts/deps/ --root "{{.ROOT | default "."}}" {{.ID}}
+      - go run ./tools/agent/deps/ --root "{{.ROOT | default "."}}" {{.ID}}
 
   deps-json:
     desc: "Show dependencies as JSON. Optional: ROOT=examples/reference-project"
     requires:
       vars: [ID]
     cmds:
-      - go run ./scripts/deps/ --root "{{.ROOT | default "."}}" {{.ID}} --json
+      - go run ./tools/agent/deps/ --root "{{.ROOT | default "."}}" {{.ID}} --json
 
   context:
     desc: "Print a cell's context pack. Usage: task context ID=user-authenticate"
     requires:
       vars: [ID]
     cmds:
-      - go run ./scripts/index/ --check 2>/dev/null || go run ./scripts/index/
+      - go run ./tools/agent/index/ --check 2>/dev/null || go run ./tools/agent/index/
       - cat gen/context/{{.ID}}.context.md
 
   context-json:
@@ -310,7 +333,7 @@ tasks:
     requires:
       vars: [ID]
     cmds:
-      - go run ./scripts/index/ --check 2>/dev/null || go run ./scripts/index/
+      - go run ./tools/agent/index/ --check 2>/dev/null || go run ./tools/agent/index/
       - python3 -c 'import json, pathlib; print(json.dumps({"id":"{{.ID}}","context":pathlib.Path("gen/context/{{.ID}}.context.md").read_text()}, indent=2))'
 
   find-cell:
@@ -318,7 +341,7 @@ tasks:
     requires:
       vars: [QUERY]
     cmds:
-      - go run ./scripts/find-cell/ --root "{{.ROOT | default "."}}" "{{.QUERY}}"
+      - go run ./tools/agent/find-cell/ --root "{{.ROOT | default "."}}" "{{.QUERY}}"
 
   doctor:
     desc: Run all architecture checks (fast, no build or tests)
@@ -333,7 +356,7 @@ tasks:
   check-agents:
     desc: Validate AGENTS.md files have required sections
     cmds:
-      - go run ./scripts/check-agents/
+      - go run ./tools/agent/check-agents/
 
   install-hooks:
     desc: Install git hooks from .githooks/ directory

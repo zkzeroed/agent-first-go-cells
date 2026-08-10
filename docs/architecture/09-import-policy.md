@@ -26,6 +26,6 @@ rules:
 
 ## 9.2 Validator
 
-`scripts/imports/` parses `policy/imports.yaml`, normalizes module-local imports,
+`tools/agent/imports/` parses `policy/imports.yaml`, normalizes module-local imports,
 and walks the import graph using `go/ast`. For internal imports, matching rules
 enforce both deny and allow lists. Run via `task policy`.

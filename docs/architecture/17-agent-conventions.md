@@ -4,7 +4,17 @@
 
 For Zed, commit only project-scoped editing settings and task templates. This
 starter's `.zed/tasks.json` exposes the root workflow and the selected-project
-reference workflow; `AGENTS.md` and `.agents/skills/` load in trusted worktrees.
+reference workflow; validation tasks save buffers before running. `AGENTS.md`
+and `.agents/skills/` load in trusted worktrees. Keep `gen/` visible in Zed:
+the generated index and context packs are part of the agent navigation
+contract, not disposable build output.
+
+For VS Code, `.vscode/tasks.json` exposes the portable Taskfile workflow;
+input-backed tasks collect exact cell IDs and optional scope expansion rather
+than inferring them. `.vscode/settings.json` enables root and nested
+`AGENTS.md` discovery. VS Code discovers the project-local `.agents/skills/`
+directly, so do not duplicate those workflows in editor-specific instruction
+files.
 
 ## Build order
 
@@ -18,6 +28,9 @@ Build cells inside-out:
 
 ## Operating loop
 
-Before editing a cell, run `task context ID=<id>` and `task deps ID=<id>`. After editing, run `task changed`; before handoff, run `task ready`.
+Before editing a cell, run `task context ID=<id>`, `task deps ID=<id>`, and
+`task scope ID=<id>`. After editing, run `task changed` and
+`task verify-scope ID=<id>`; before handoff, run `task ready`. Cross-cell or
+shared integration work requires explicit `WITH=` scope expansion.
 
 Use `task tools:check` to verify the local toolchain.

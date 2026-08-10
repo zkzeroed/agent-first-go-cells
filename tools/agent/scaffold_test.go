@@ -1,4 +1,4 @@
-package scripts_test
+package agent_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zkzeroed/agent-first-go-cells/scripts/manifest"
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
 func TestScaffoldersRejectExistingCellPaths(t *testing.T) {
@@ -64,7 +64,7 @@ func runScaffolder(t *testing.T, root, script, id string) {
 
 func scaffolder(t *testing.T, root, script, id string) *exec.Cmd {
 	t.Helper()
-	command := exec.Command("bash", filepath.Join(projectRoot(t), "scripts", script), id)
+	command := exec.Command("bash", filepath.Join(projectRoot(t), "tools", "agent", script), id)
 	command.Dir = root
 	return command
 }

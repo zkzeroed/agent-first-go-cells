@@ -80,7 +80,7 @@ func checkManifests() (bool, string) {
 }
 
 func checkIndex() (bool, string) {
-	cmd := exec.Command("go", "run", "./scripts/index/", "--check")
+	cmd := exec.Command("go", "run", "./tools/agent/index/", "--check")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Run(); err != nil {
@@ -90,7 +90,7 @@ func checkIndex() (bool, string) {
 }
 
 func checkStructureTests() (bool, string) {
-	cmd := exec.Command("go", "test", "-run", "Test(Cell|No|Files|Every)", "./scripts/structure/...")
+	cmd := exec.Command("go", "test", "-run", "Test(Cell|No|Files|Every)", "./tools/agent/structure/...")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Run(); err != nil {
@@ -100,7 +100,7 @@ func checkStructureTests() (bool, string) {
 }
 
 func checkAgents() (bool, string) {
-	cmd := exec.Command("go", "run", "./scripts/check-agents/")
+	cmd := exec.Command("go", "run", "./tools/agent/check-agents/")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Run(); err != nil {
@@ -110,7 +110,7 @@ func checkAgents() (bool, string) {
 }
 
 func checkPolicy() (bool, string) {
-	cmd := exec.Command("go", "run", "./scripts/imports/")
+	cmd := exec.Command("go", "run", "./tools/agent/imports/")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Run(); err != nil {

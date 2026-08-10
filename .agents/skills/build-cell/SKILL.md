@@ -165,6 +165,7 @@ userAuth := userauthenticate.New(userauthenticate.Deps{Store: userAuthStore})
 task index          # regenerate cell index
 task test-cell ID=user-authenticate
 task impact         # check blast radius
+task verify-scope ID=user-authenticate WITH=@wiring
 task doctor         # architecture health check
 ```
 

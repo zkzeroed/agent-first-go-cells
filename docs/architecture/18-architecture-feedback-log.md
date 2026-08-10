@@ -40,6 +40,36 @@ Use this format for each entry:
 
 ## Log Entries
 
+### 2026-08-10 — Keep all validation caches writable
+
+- **Context:** Ran the complete architecture handoff in a sandbox with a read-only home directory.
+- **What worked:** Taskfile defaults already redirected Go build and ccache state to a writable temporary location.
+- **Difficulty:** `task lint` still emitted extensive cache-write warnings from golangci-lint despite passing.
+- **Cause:** golangci-lint uses its own cache location, independent of `GOCACHE` and `CCACHE_DIR`.
+- **Fix applied:** Added a temporary `GOLANGCI_LINT_CACHE` default and documented all three cache overrides in the agent workflow.
+- **Suggested improvement:** When adding a validation tool, identify and redirect its persistent state before making it part of the agent handoff loop.
+- **Files/commands:** `Taskfile.yml`, `AGENTS.md`, `docs/architecture/14-taskfile-targets.md`, `task lint`.
+
+### 2026-08-10 — Keep generated context visible in Zed
+
+- **Context:** Audited the Zed project configuration against the cell-navigation workflow.
+- **What worked:** Root `AGENTS.md`, project-local skills, and Taskfile tasks are directly consumable in a trusted Zed worktree.
+- **Difficulty:** Zed excluded `gen/` from scans, searches, and the project tree even though it contains the generated cell index and bounded context packs.
+- **Cause:** Generated files were treated as generic build output rather than as agent-navigation inputs.
+- **Fix applied:** Restored Zed's standard exclusions, removed `gen/` from exclusions, and made validation tasks save open buffers before executing.
+- **Suggested improvement:** Keep editor configuration small; expose new Taskfile commands in Zed only when their required inputs can be supplied safely without duplicating workflow logic.
+- **Files/commands:** `.zed/settings.json`, `.zed/tasks.json`, `AGENTS.md`, `task context`, `task scope`.
+
+### 2026-08-10 — Make cell scope explicit and fail closed
+
+- **Context:** Reviewed how an agent can refactor a cell without silently expanding into unrelated code.
+- **What worked:** API membranes, source-backed manifests, and transitive impact already expose the dependency graph.
+- **Difficulty:** They did not state which files a specific task was authorized to change, and shared integration surfaces had incomplete impact coverage.
+- **Cause:** Navigation and validation were separate commands without an explicit task-local boundary.
+- **Fix applied:** Added read-only scope and fail-closed scope verification commands, including target removal from `HEAD`; impact now treats contracts, platform, and wiring as full-project shared surfaces.
+- **Suggested improvement:** Keep verification opt-in until real feature work establishes a safe task-identity mechanism for automatic handoff enforcement.
+- **Files/commands:** `tools/agent/scope/`, `tools/agent/impact/`, `task scope`, `task verify-scope`.
+
 ### 2026-08-10 — Make impact follow generated guide context
 
 - **Context:** Revalidated impact output against the generated context-pack inputs before extending agent feedback.
@@ -48,7 +78,7 @@ Use this format for each entry:
 - **Cause:** File filtering covered only Go/YAML and dependency traversal stopped after one hop.
 - **Fix applied:** Impact now maps cell-local guides, uses directory-boundary ownership, and reports sorted transitive downstream cells.
 - **Suggested improvement:** Keep the analyzer limited to declared cell relationships; dynamic runtime coupling belongs in broader integration validation.
-- **Files/commands:** `scripts/impact/`, `docs/architecture/07-impact-analysis.md`, `task impact`.
+- **Files/commands:** `tools/agent/impact/`, `docs/architecture/07-impact-analysis.md`, `task impact`.
 
 ### 2026-08-10 — Verify metadata against the source graph
 
@@ -58,7 +88,7 @@ Use this format for each entry:
 - **Cause:** Parsing retained only entrypoint paths, and import policy validated allowed paths without comparing them to the manifest graph.
 - **Fix applied:** Scaffolders now fail safely on existing paths and emit valid API entrypoints; metadata validation resolves entrypoint files/symbols and exact direct API dependencies.
 - **Suggested improvement:** Keep this AST-level check focused on declared cell boundaries; add type-checking only if evidence shows syntax-level validation is insufficient.
-- **Files/commands:** `scripts/new-cell.sh`, `scripts/new-domain.sh`, `scripts/manifest/`, `task check-manifests`.
+- **Files/commands:** `tools/agent/new-cell.sh`, `tools/agent/new-domain.sh`, `tools/agent/manifest/`, `task check-manifests`.
 
 ### 2026-08-10 — Domain example completes the schema exercise
 
@@ -78,7 +108,7 @@ Use this format for each entry:
 - **Cause:** Navigation accepted `ROOT`, but impact did not share that project-selection input.
 - **Fix applied:** Added `ROOT`/`--root` to impact, changed, and ready; impact now filters repository changes into selected-project-relative paths before mapping ownership.
 - **Suggested improvement:** Keep Git discovery repository-scoped; selected-project support should remain a path filter rather than introduce nested Git semantics.
-- **Files/commands:** `task ready`, `scripts/impact/`, `examples/reference-project/`.
+- **Files/commands:** `task ready`, `tools/agent/impact/`, `examples/reference-project/`.
 
 ### 2026-08-10 — Cold-start skill drift surfaced by a real cell build
 
@@ -118,7 +148,7 @@ Use this format for each entry:
 - **Cause:** The public contract and implementation shared one importable package.
 - **Fix applied:** Scaffolded `api/api.go`, restricted cell imports to `api` paths, enforced internal allow lists, and corrected the function-override guardrail.
 - **Suggested improvement:** Add a complete fixture project once the first production cells exist, to exercise the full multi-cell workflow under the final package layout.
-- **Files/commands:** `scripts/new-cell.sh`, `scripts/new-domain.sh`, `scripts/structure/structure_test.go`, `scripts/imports/`, `task doctor`.
+- **Files/commands:** `tools/agent/new-cell.sh`, `tools/agent/new-domain.sh`, `tools/agent/structure/structure_test.go`, `tools/agent/imports/`, `task doctor`.
 
 ### 2026-08-09 — Make agent metadata fail closed
 
@@ -128,7 +158,7 @@ Use this format for each entry:
 - **Cause:** Documentation expressed stronger contracts than the custom parsers and shell wrappers enforced.
 - **Fix applied:** Hardened manifest parsing/validation, context freshness, dependency matching, test failure propagation, and scaffold validation; added focused regression coverage.
 - **Suggested improvement:** Make cell membranes explicit `api` packages before introducing cross-cell dependencies, because Go imports packages rather than individual interface files.
-- **Files/commands:** `scripts/manifest/`, `scripts/index/`, `scripts/impact/`, `Taskfile.yml`, `task doctor`, `task ready`.
+- **Files/commands:** `tools/agent/manifest/`, `tools/agent/index/`, `tools/agent/impact/`, `Taskfile.yml`, `task doctor`, `task ready`.
 
 ### 2026-07-04 — Created architecture feedback workflow
 

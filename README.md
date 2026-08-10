@@ -18,7 +18,7 @@ are assembled in one composition root.
 The familiar foundations are vertical slices, modular boundaries, and
 ports-and-adapters. The differentiator is the operational layer for agents:
 machine-readable manifests, generated context packs, dependency and impact
-analysis, scaffolding, and structural checks.
+analysis, explicit edit scopes, scaffolding, and structural checks.
 
 ```
 task → cell → api/api.go → explicit wiring → validation
@@ -38,15 +38,30 @@ task orient
 task find-cell QUERY=<topic>
 task context ID=<cell-id>
 task deps ID=<cell-id>
+task scope ID=<cell-id>
 
-# After an edit.
+# After an edit, prove that the change stayed within its declared boundary.
 task changed
+task verify-scope ID=<cell-id>
 task ready
 ```
 
 Create a capability with `task new-cell ID=user-authenticate`, then build it
 inside-out: public API, types and errors, store, service, handler, tests,
 manifest, guide, and explicit wiring.
+
+## What an agent can prove before handoff
+
+| Question | Evidence | Command |
+| --- | --- | --- |
+| Where does this work belong? | Cell metadata and a bounded context pack | `task find-cell`, `task context` |
+| What may change? | Exact cell ownership plus explicitly declared shared surfaces | `task scope` |
+| What else can it affect? | Exact dependency graph and conservative shared-surface analysis | `task deps`, `task impact` |
+| Did the work stay safe? | Fail-closed scope check plus architecture, test, and status checks | `task verify-scope`, `task ready` |
+
+Agents may extend scope only with exact cell IDs or the explicit shared-surface
+tokens `@contracts`, `@platform`, and `@wiring`; dependencies and dependents do
+not authorize edits implicitly.
 
 ## A cell at a glance
 
@@ -80,7 +95,9 @@ internal/cells/user-authenticate/
 | --- | --- | --- |
 | Orientation | `task orient` | Cells, architecture health, and repository state |
 | Fast check | `task quick-check` | Structure, policy, manifests, and generated index |
-| Change scope | `task changed` | Git state and affected cells |
+| Change scope | `task scope ID=<id>` | Explicit permitted edit boundary |
+| Scope check | `task verify-scope ID=<id>` | Reject changes outside that boundary |
+| Change impact | `task changed` | Git state and affected cells |
 | Handoff | `task ready` | Doctor, impact analysis, tests, and state |
 | Lint | `task lint` | Bootstrap tooling and reference module |
 | Parser hardening | `task fuzz` | Bounded fuzzing for manifest input |
@@ -88,6 +105,8 @@ internal/cells/user-authenticate/
 Install the provided Git hooks with `task install-hooks`.
 `task test` covers the bootstrap tooling, application tests, and reference
 project; `task fuzz` is intentionally opt-in rather than part of every handoff.
+Run `task --list` for the complete command surface; the [Task target reference](docs/architecture/14-taskfile-targets.md)
+explains the navigation and machine-readable variants.
 
 ## Agent integration
 
@@ -96,9 +115,15 @@ metadata are the portable agent interface. Project-local skills cover
 navigation, building, modification, modern Go, and token-efficient command
 output.
 
-Zed users can run the root and reference workflows from `.zed/tasks.json`.
-Zed Agent loads this repository's `AGENTS.md` and project-local skills in a
-trusted worktree.
+Zed users can run the root and reference workflows from `.zed/tasks.json`; its
+validation tasks save open buffers first. Zed Agent loads this repository's
+`AGENTS.md` and project-local skills in a trusted worktree. The generated
+`gen/` index and context packs intentionally remain visible for navigation.
+
+VS Code users can run the same workflow through `.vscode/tasks.json`, including
+input-backed context, dependency, scope, and scope-verification tasks. Its
+workspace settings enable root and cell-local `AGENTS.md` discovery and reuse
+the existing `.agents/skills/` directly.
 
 ## Modern Go
 

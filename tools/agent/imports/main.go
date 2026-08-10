@@ -59,7 +59,7 @@ func main() {
 			return nil
 		}
 
-		if strings.HasPrefix(path, "vendor/") || strings.HasPrefix(path, "scripts/") {
+		if strings.HasPrefix(path, "vendor/") || strings.HasPrefix(path, "tools/agent/") {
 			return nil
 		}
 

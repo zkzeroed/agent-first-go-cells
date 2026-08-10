@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zkzeroed/agent-first-go-cells/scripts/manifest"
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
 func TestCheckContextPacksAllowsMissingDirectoryWithoutCells(t *testing.T) {

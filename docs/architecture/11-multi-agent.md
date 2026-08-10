@@ -16,6 +16,7 @@
 │  2. WORK: Agent works entirely within its cell directory        │
 │     → Creates/modifies files following the fixed schema         │
 │     → Updates cell.yaml if dependencies/invariants change       │
+│     → Runs task scope and verifies declared scope before handoff │
 │     → Runs tests: go test ./internal/cells/{name}/...           │
 │     → Does NOT touch wiring.go or other cells                   │
 │                                                                 │

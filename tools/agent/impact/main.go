@@ -11,6 +11,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -19,7 +20,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/zkzeroed/agent-first-go-cells/scripts/manifest"
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
 type impactArgs struct {
@@ -29,11 +30,13 @@ type impactArgs struct {
 }
 
 type impactReport struct {
-	Base        string   `json:"base"`
-	Changed     []string `json:"changedFiles"`
-	OwningCells []string `json:"owningCells"`
-	Affected    []string `json:"affectedCells"`
-	Validation  []string `json:"validation"`
+	Base                  string   `json:"base"`
+	Changed               []string `json:"changedFiles"`
+	OwningCells           []string `json:"owningCells"`
+	Affected              []string `json:"affectedCells"`
+	Validation            []string `json:"validation"`
+	SharedSurfaces        []string `json:"sharedSurfaces"`
+	FullProjectValidation bool     `json:"fullProjectValidation"`
 }
 
 func main() {
@@ -93,20 +96,102 @@ func buildReport(base, root string) (impactReport, error) {
 		return impactReport{}, fmt.Errorf("filtering changed files: %w", err)
 	}
 
-	manifests, err := manifest.FindAllAt(root)
+	removed, err := removedManifestsAtHEAD(root, changedFiles)
+	if err != nil {
+		return impactReport{}, fmt.Errorf("reading removed manifests: %w", err)
+	}
+	manifests, err := manifest.FindAllAtWith(root, removed)
 	if err != nil {
 		return impactReport{}, fmt.Errorf("reading manifests: %w", err)
 	}
 
+	sharedSurfaces := findSharedSurfaces(changedFiles)
 	owningCells := mapCells(changedFiles, manifests)
+	fullProjectValidation := len(sharedSurfaces) > 0
 	affectedCells := findAffected(owningCells, manifests)
+	if fullProjectValidation {
+		affectedCells = allCellIDs(manifests)
+	}
 	return impactReport{
-		Base:        base,
-		Changed:     emptyIfNil(changedFiles),
-		OwningCells: emptyIfNil(owningCells),
-		Affected:    emptyIfNil(affectedCells),
-		Validation:  emptyIfNil(validationCommands(owningCells, affectedCells, manifests)),
+		Base:                  base,
+		Changed:               emptyIfNil(changedFiles),
+		OwningCells:           emptyIfNil(owningCells),
+		Affected:              emptyIfNil(affectedCells),
+		Validation:            emptyIfNil(validationCommands(owningCells, affectedCells, manifests, fullProjectValidation)),
+		SharedSurfaces:        emptyIfNil(sharedSurfaces),
+		FullProjectValidation: fullProjectValidation,
 	}, nil
+}
+
+func removedManifestsAtHEAD(root string, files []string) ([]manifest.Manifest, error) {
+	var manifests []manifest.Manifest
+	for _, file := range files {
+		id, found := removedCellID(file)
+		if !found || manifestByID(id, manifests) != nil {
+			continue
+		}
+		missing, err := missingFromWorktree(root, file)
+		if err != nil {
+			return nil, err
+		}
+		if !missing {
+			continue
+		}
+		removed, err := manifestAtHEAD(root, id)
+		if err != nil {
+			return nil, err
+		}
+		manifests = append(manifests, *removed)
+	}
+	return manifests, nil
+}
+
+func missingFromWorktree(root, file string) (bool, error) {
+	_, err := os.Stat(filepath.Join(root, file))
+	if errors.Is(err, os.ErrNotExist) {
+		return true, nil
+	}
+	return false, err
+}
+
+func removedCellID(file string) (string, bool) {
+	file = filepath.ToSlash(file)
+	prefix := "internal/cells/"
+	if !strings.HasPrefix(file, prefix) || !strings.HasSuffix(file, "/cell.yaml") {
+		return "", false
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(file, prefix), "/cell.yaml"), true
+}
+
+func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
+	repository, err := gitRoot(root)
+	if err != nil {
+		return nil, err
+	}
+	project, err := projectPath(repository, root)
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.ToSlash(filepath.Join(project, "internal", "cells", id, "cell.yaml"))
+	content, err := gitOutput(repository, "show", "HEAD:"+path)
+	if err != nil {
+		return nil, err
+	}
+	result, err := manifest.Parse(content)
+	if err != nil {
+		return nil, err
+	}
+	result.Dir = filepath.Join("internal", "cells", filepath.FromSlash(id))
+	return &result, nil
+}
+
+func manifestByID(id string, manifests []manifest.Manifest) *manifest.Manifest {
+	for i := range manifests {
+		if manifests[i].ID == id {
+			return &manifests[i]
+		}
+	}
+	return nil
 }
 
 func getChangedFiles(base string) ([]string, error) {
@@ -130,8 +215,11 @@ func getChangedFilesAt(base, directory string) ([]string, error) {
 }
 
 func gitRoot(root string) (string, error) {
-	cmd := exec.Command("git", "-C", root, "rev-parse", "--show-toplevel")
-	output, err := cmd.Output()
+	return gitOutput(root, "rev-parse", "--show-toplevel")
+}
+
+func gitOutput(root string, args ...string) (string, error) {
+	output, err := exec.Command("git", append([]string{"-C", root}, args...)...).Output()
 	if err != nil {
 		return "", err
 	}
@@ -139,16 +227,9 @@ func gitRoot(root string) (string, error) {
 }
 
 func filesUnderRoot(files []string, repositoryRoot, root string) ([]string, error) {
-	projectRoot, err := filepath.Abs(root)
+	rootRelative, err := projectPath(repositoryRoot, root)
 	if err != nil {
 		return nil, err
-	}
-	rootRelative, err := filepath.Rel(repositoryRoot, projectRoot)
-	if err != nil {
-		return nil, err
-	}
-	if isOutsideRoot(rootRelative) {
-		return nil, fmt.Errorf("project root %s is outside Git repository %s", projectRoot, repositoryRoot)
 	}
 
 	rootPrefix := filepath.ToSlash(filepath.Clean(rootRelative))
@@ -163,6 +244,18 @@ func filesUnderRoot(files []string, repositoryRoot, root string) ([]string, erro
 		}
 	}
 	return result, nil
+}
+
+func projectPath(repositoryRoot, root string) (string, error) {
+	projectRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	rootRelative, err := filepath.Rel(repositoryRoot, projectRoot)
+	if err != nil || isOutsideRoot(rootRelative) {
+		return "", fmt.Errorf("project root %s is outside Git repository %s", projectRoot, repositoryRoot)
+	}
+	return rootRelative, nil
 }
 
 func isOutsideRoot(path string) bool {
@@ -183,7 +276,7 @@ func impactFiles(outputs ...string) []string {
 }
 
 func isTrackedForImpact(path string) bool {
-	return path != "" && (strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || isCellAgentsFile(path))
+	return path != "" && (strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || isCellAgentsFile(path) || sharedSurface(path) != "")
 }
 
 func isCellAgentsFile(path string) bool {
@@ -194,16 +287,46 @@ func isCellAgentsFile(path string) bool {
 func mapCells(files []string, manifests []manifest.Manifest) []string {
 	var result []string
 	for _, file := range files {
+		owner := ""
+		ownerLength := 0
 		for _, m := range manifests {
-			if isWithinCell(file, m.Dir) && !slices.Contains(result, m.ID) {
-				result = append(result, m.ID)
+			if isWithinCell(file, m.Dir) && len(m.Dir) > ownerLength {
+				owner = m.ID
+				ownerLength = len(m.Dir)
 			}
 		}
-		if strings.HasPrefix(file, "internal/contracts/") && !slices.Contains(result, "contracts (shared)") {
-			result = append(result, "contracts (shared)")
+		if owner != "" && !slices.Contains(result, owner) {
+			result = append(result, owner)
+		}
+		if surface := sharedSurface(file); surface != "" && !slices.Contains(result, surface+" (shared)") {
+			result = append(result, surface+" (shared)")
 		}
 	}
 	return result
+}
+
+func findSharedSurfaces(files []string) []string {
+	var result []string
+	for _, file := range files {
+		if surface := sharedSurface(file); surface != "" && !slices.Contains(result, surface) {
+			result = append(result, surface)
+		}
+	}
+	return result
+}
+
+func sharedSurface(file string) string {
+	file = filepath.ToSlash(file)
+	switch {
+	case strings.HasPrefix(file, "internal/contracts/"):
+		return "contracts"
+	case strings.HasPrefix(file, "internal/platform/"):
+		return "platform"
+	case filepath.Dir(file) == "internal/app" && strings.HasPrefix(filepath.Base(file), "wiring") && strings.HasSuffix(file, ".go"):
+		return "wiring"
+	default:
+		return ""
+	}
 }
 
 func isWithinCell(file, cellDir string) bool {
@@ -231,7 +354,19 @@ func findAffected(owningCells []string, manifests []manifest.Manifest) []string 
 	return result
 }
 
-func validationCommands(owningCells []string, affected []string, manifests []manifest.Manifest) []string {
+func allCellIDs(manifests []manifest.Manifest) []string {
+	result := make([]string, 0, len(manifests))
+	for _, m := range manifests {
+		result = append(result, m.ID)
+	}
+	slices.Sort(result)
+	return result
+}
+
+func validationCommands(owningCells []string, affected []string, manifests []manifest.Manifest, fullProject bool) []string {
+	if fullProject {
+		return []string{"go test ./..."}
+	}
 	cellIDs := unique(append(slices.Clone(owningCells), affected...))
 	var commands []string
 	for _, cellID := range cellIDs {
@@ -278,6 +413,7 @@ func printText(report impactReport) {
 	fmt.Println("=== Impact Analysis ===")
 	printSection("Changed files", report.Changed)
 	printSection("Owning cells", report.OwningCells)
+	printSection("Shared surfaces", report.SharedSurfaces)
 	printSection("Affected cells (downstream of changed cells)", report.Affected)
 	printSection("Validation commands to run", report.Validation)
 }

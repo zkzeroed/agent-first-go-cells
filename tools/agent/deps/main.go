@@ -17,7 +17,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/zkzeroed/agent-first-go-cells/scripts/manifest"
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
 type dependencyReport struct {

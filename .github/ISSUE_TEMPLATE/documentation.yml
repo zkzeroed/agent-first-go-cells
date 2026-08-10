@@ -1,0 +1,25 @@
+name: Documentation improvement
+description: Suggest clearer, missing, or incorrect documentation.
+title: "docs: "
+labels:
+  - documentation
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page or file
+      placeholder: docs/architecture/04-cell-file-schema.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What should change?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed wording or structure

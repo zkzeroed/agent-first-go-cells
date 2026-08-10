@@ -1,0 +1,57 @@
+version: "2"
+run:
+  go: "1.26"
+linters:
+  enable:
+    - cyclop
+    - errname
+    - errorlint
+    - gochecknoinits
+    - gosec
+    - misspell
+    - modernize
+    - nilerr
+    - nolintlint
+    - rowserrcheck
+    - whitespace
+  settings:
+    cyclop:
+      max-complexity: 16
+    gosec:
+      excludes:
+        - G204 # Git commands have a fixed executable; paths are arguments, not shell input.
+        - G301 # Generated documentation and indexes are intentionally world-readable.
+        - G304 # Tooling reads repository paths selected by the user or manifest walker.
+        - G306 # Generated documentation and indexes are intentionally world-readable.
+        - G602 # Tests establish slice lengths before indexing.
+        - G703 # Manifest validation constrains generated context-pack paths.
+        - G122 # Manifest walkers run only over the selected local project tree.
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    staticcheck:
+      checks:
+        - all
+        - -QF1012
+  exclusions:
+    generated: strict
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - nilerr
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/zkzeroed/agent-first-go-cells
+        - example.com/agent-first-reference
+  exclusions:
+    generated: strict

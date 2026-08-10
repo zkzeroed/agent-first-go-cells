@@ -1,0 +1,11 @@
+id: token-issue
+purpose: "Issue random opaque tokens and retain only their SHA-256 digests"
+entrypoints:
+  - file: api/api.go
+    symbol: Issuer
+dependencies: []
+validation:
+  - go test ./internal/cells/token-issue/...
+invariants:
+  - "Raw tokens are never written to the store"
+  - "Empty subjects are rejected before random bytes are generated"

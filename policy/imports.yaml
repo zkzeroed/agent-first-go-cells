@@ -1,0 +1,19 @@
+rules:
+  - from: internal/cells/**
+    allow:
+      - pkg/**
+      - internal/contracts/**
+      - internal/platform/**
+      - internal/cells/**/api # explicit cell contract packages only
+    deny:
+      - internal/app/**    # cells must not import wiring or app internals
+
+  - from: pkg/**
+    deny:
+      - internal/**        # pkg must never import internal
+
+  - from: cmd/**
+    allow:
+      - internal/app/**
+    deny:
+      - internal/cells/**  # cmd imports app only, not cells directly

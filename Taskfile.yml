@@ -1,0 +1,340 @@
+version: '3'
+
+vars:
+  APP_NAME: myproject
+  MAIN_PKG: ./cmd/{{.APP_NAME}}
+  GOLANGCI_LINT_VERSION: v2.12.2
+  GOFUMPT_VERSION: v0.10.0
+  GOIMPORTS_VERSION: v0.48.0
+
+silent: false
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  orient:
+    desc: Orient an agent entering the repository (cells + doctor + status)
+    cmds:
+      - task: cells
+      - task: doctor
+      - git --no-pager status --short
+      - 'echo "→ Use: task find-cell QUERY=<topic> to find a cell"'
+      - 'echo "→ Use: task context ID=<cell-id> to read a cell"'
+
+  changed:
+    desc: Summarize current work and likely validation needs (status + impact)
+    cmds:
+      - git --no-pager status --short
+      - task: impact
+        vars: {ROOT: '{{.ROOT | default "."}}'}
+
+  ready:
+    desc: Standard pre-handoff validation for agents (doctor + impact + test)
+    cmds:
+      - task: doctor
+      - task: impact
+        vars: {ROOT: '{{.ROOT | default "."}}'}
+      - |
+        root="{{.ROOT | default "."}}"
+        if [ "$root" = "." ]; then
+          task test
+        else
+          (cd "$root" && go test -race -count=1 ./...)
+        fi
+      - git --no-pager status --short
+      - 'echo "✓ Ready for handoff"'
+
+  quick-check:
+    desc: Fast post-edit validation (structure + policy + manifests + index)
+    cmds:
+      - task: structure-test
+      - task: policy
+      - task: check-manifests
+      - task: check-index
+      - 'echo "✓ Quick check passed"'
+
+  setup:
+    desc: Bootstrap the local developer/agent environment
+    cmds:
+      - task: tools:check
+      - task: install-hooks
+      - 'echo "✓ Setup complete — run: task orient"'
+
+  tools:check:
+    desc: Verify required development tools are installed
+    cmds:
+      - |
+        tools="go task gofumpt goimports golangci-lint govulncheck"
+        missing=0
+        for tool in $tools; do
+          if command -v "$tool" >/dev/null 2>&1; then
+            case "$tool" in
+              go) version="$(go version)" ;;
+              goimports) version="$(go version -m \"$(command -v goimports)\" 2>/dev/null | awk '$1 == \"mod\" { print $3; exit }')"; version="${version:-unknown}" ;;
+              *) version="$("$tool" --version 2>&1 | head -1)" ;;
+            esac
+            echo "  ✓ $tool ($version)"
+          else
+            echo "  ✗ $tool NOT FOUND"
+            missing=$((missing + 1))
+          fi
+        done
+        if [ "$missing" -gt 0 ]; then
+          echo ""
+          echo "$missing tool(s) missing. Run: task tools:install"
+          exit 1
+        fi
+        echo ""
+        echo "✓ All tools present"
+
+  tools:install:
+    desc: Install required Go development tools
+    cmds:
+      - go install mvdan.cc/gofumpt@{{.GOFUMPT_VERSION}}
+      - go install golang.org/x/tools/cmd/goimports@{{.GOIMPORTS_VERSION}}
+      - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
+      - go install golang.org/x/vuln/cmd/govulncheck@latest
+      - 'echo "✓ Tools installed"'
+
+  all:
+    desc: Build, test, lint, check files, manifests, indexes, and AGENTS.md
+    cmds:
+      - task: build
+      - task: test
+      - task: lint
+      - task: check-files
+      - task: check-manifests
+      - task: check-index
+      - task: check-agents
+      - echo "✓ All checks passed"
+
+  build:
+    desc: Compile the binary
+    cmds:
+      - go build -o bin/{{.APP_NAME}} {{.MAIN_PKG}}
+
+  test:
+    desc: Run all tests with race detector
+    cmds:
+      - task: test-unit
+      - task: test-integration
+      - task: test-reference
+
+  test-unit:
+    desc: Run bootstrap unit and tooling tests (fast, no external deps)
+    cmds:
+      - |
+        for dir in internal pkg scripts; do
+          if [ -d "$dir" ]; then
+            go test -race -count=1 -short ./$dir/...
+          fi
+        done
+
+  test-integration:
+    desc: Run integration tests (may need external services)
+    cmds:
+      - |
+        if [ -d test/integration ]; then
+          go test -race -count=1 ./test/integration/...
+        fi
+
+  test-reference:
+    desc: Run the reference project's tests with the race detector
+    cmds:
+      - (cd examples/reference-project && go test -race -count=1 ./...)
+
+  fuzz:
+    desc: "Bounded manifest-parser fuzz test. Optional: FUZZ_TIME=30s"
+    cmds:
+      - go test -fuzz=FuzzParse -fuzztime={{.FUZZ_TIME | default "10s"}} -parallel=1 ./scripts/manifest
+
+  test-cell:
+    desc: "Run tests for a specific cell. Usage: task test-cell ID=user-authenticate"
+    requires:
+      vars: [ID]
+    cmds:
+      - go test -race -count=1 -v ./internal/cells/{{.ID}}/...
+
+  lint:
+    desc: Run golangci-lint for the bootstrap and reference modules
+    cmds:
+      - golangci-lint run ./...
+      - (cd examples/reference-project && golangci-lint run ./...)
+
+  lint-cell:
+    desc: "Lint a specific cell. Usage: task lint-cell ID=user-authenticate"
+    requires:
+      vars: [ID]
+    cmds:
+      - golangci-lint run ./internal/cells/{{.ID}}/...
+
+  check-files:
+    desc: Enforce max file size (300 LOC)
+    cmds:
+      - |
+        find . -name '*.go' -not -path './vendor/*' -not -path './scripts/*' -not -name '*_test.go' |
+        xargs wc -l |
+        awk '$1 > 300 && $2 != "total" {print "FILE TOO LARGE:", $2, "("$1" lines)"; exit 1}'
+      - echo "✓ All files within size limits"
+
+  check-manifests:
+    desc: Validate all cell.yaml manifests
+    cmds:
+      - go run ./scripts/index/ --json >/dev/null
+      - echo "✓ All manifests valid"
+
+  index:
+    desc: "Regenerate indexes. Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/index/ --root "{{.ROOT | default "."}}"
+      - echo "✓ Indexes regenerated"
+
+  check-index:
+    desc: "Verify indexes are fresh. Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/index/ --check --root "{{.ROOT | default "."}}"
+      - echo "✓ Indexes are fresh"
+
+  index-json:
+    desc: "Output index JSON. Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/index/ --json --root "{{.ROOT | default "."}}"
+
+  impact:
+    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/impact/ --root "{{.ROOT | default "."}}"
+
+  impact-json:
+    desc: "Show affected cells for changed files as JSON. Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/impact/ --json --root "{{.ROOT | default "."}}"
+
+  new-cell:
+    desc: "Scaffold a new cell directory. Usage: task new-cell ID=user-authenticate"
+    requires:
+      vars: [ID]
+    cmds:
+      - ./scripts/new-cell.sh {{.ID}}
+
+  scaffold-domain:
+    desc: "Scaffold a domain cell with sub-action support. Usage: task scaffold-domain ID=users"
+    requires:
+      vars: [ID]
+    cmds:
+      - ./scripts/new-domain.sh {{.ID}}
+
+  validate-cell:
+    desc: "Run cell's declared validation commands. Usage: task validate-cell ID=user-authenticate"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./scripts/validate-cell/ {{.ID}}
+
+  policy:
+    desc: Validate import policy
+    cmds:
+      - go run ./scripts/imports/
+
+  vuln:
+    desc: Run govulncheck
+    cmds:
+      - govulncheck ./...
+
+  generate:
+    desc: Run all go:generate directives
+    cmds:
+      - go generate ./...
+
+  fmt:
+    desc: Format all Go files
+    cmds:
+      - gofumpt -w .
+      - goimports -w .
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/
+
+  structure-test:
+    desc: Run architecture invariant tests
+    cmds:
+      - go test -run "Test(Cell|No|Files|Every)" ./scripts/structure/...
+
+  cells:
+    desc: "List cells. Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/cells/ --root "{{.ROOT | default "."}}"
+
+  cells-json:
+    desc: "List cells as JSON. Optional: ROOT=examples/reference-project"
+    cmds:
+      - go run ./scripts/cells/ --json --root "{{.ROOT | default "."}}"
+
+  deps:
+    desc: "Show dependencies. Optional: ROOT=examples/reference-project"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./scripts/deps/ --root "{{.ROOT | default "."}}" {{.ID}}
+
+  deps-json:
+    desc: "Show dependencies as JSON. Optional: ROOT=examples/reference-project"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./scripts/deps/ --root "{{.ROOT | default "."}}" {{.ID}} --json
+
+  context:
+    desc: "Print a cell's context pack. Usage: task context ID=user-authenticate"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./scripts/index/ --check 2>/dev/null || go run ./scripts/index/
+      - cat gen/context/{{.ID}}.context.md
+
+  context-json:
+    desc: "Print a cell's context pack as JSON. Usage: task context-json ID=user-authenticate"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./scripts/index/ --check 2>/dev/null || go run ./scripts/index/
+      - python3 -c 'import json, pathlib; print(json.dumps({"id":"{{.ID}}","context":pathlib.Path("gen/context/{{.ID}}.context.md").read_text()}, indent=2))'
+
+  find-cell:
+    desc: "Search cells. Optional: ROOT=examples/reference-project"
+    requires:
+      vars: [QUERY]
+    cmds:
+      - go run ./scripts/find-cell/ --root "{{.ROOT | default "."}}" "{{.QUERY}}"
+
+  doctor:
+    desc: Run all architecture checks (fast, no build or tests)
+    cmds:
+      - task: check-manifests
+      - task: check-index
+      - task: structure-test
+      - task: check-agents
+      - task: policy
+      - 'echo "✓ Doctor: all architecture checks passed"'
+
+  check-agents:
+    desc: Validate AGENTS.md files have required sections
+    cmds:
+      - go run ./scripts/check-agents/
+
+  install-hooks:
+    desc: Install git hooks from .githooks/ directory
+    cmds:
+      - git config core.hooksPath .githooks
+      - chmod +x .githooks/pre-commit .githooks/pre-push
+      - echo "✓ Git hooks installed (core.hooksPath = .githooks)"
+
+  help:
+    desc: Show available tasks
+    cmds:
+      - task --list

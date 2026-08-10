@@ -1,0 +1,51 @@
+name: architecture feedback
+description: Record friction, wins, or improvement ideas that directly affect the Agent-First Go cell architecture.
+title: "architecture: "
+labels:
+  - architecture
+  - feedback
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What cell architecture task or area were you working on?
+    validations:
+      required: true
+
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked well?
+      description: What helped agents create, modify, wire, validate, or navigate cells more safely?
+
+  - type: textarea
+    id: difficulty
+    attributes:
+      label: What caused friction?
+      description: What cell-architecture rule, file schema, dependency pattern, or validation step caused friction?
+
+  - type: textarea
+    id: cause
+    attributes:
+      label: Likely root cause
+
+  - type: textarea
+    id: fix
+    attributes:
+      label: Fix applied
+      description: What was done now, if anything?
+
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested improvement
+      description: What should be amended, changed, removed, automated, or documented next for the cell architecture?
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Relevant files or commands
+      render: shell

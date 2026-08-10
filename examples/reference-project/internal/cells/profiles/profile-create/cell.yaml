@@ -1,0 +1,11 @@
+id: profiles/profile-create
+purpose: "Create validated profiles using the shared repository contract"
+entrypoints:
+  - file: api/api.go
+    symbol: Creator
+dependencies:
+  - profiles
+validation:
+  - go test ./internal/cells/profiles/profile-create/...
+invariants:
+  - "Empty profile identifiers and names are rejected"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/zkzeroed/agent-first-go-cells/security/advisories/new
+    about: Please report suspected vulnerabilities privately.
+  - name: architecture documentation
+    url: https://github.com/zkzeroed/agent-first-go-cells/tree/main/docs/architecture
+    about: Read the architecture docs before proposing structural changes.

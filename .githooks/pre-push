@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# pre-push hook — full test suite before pushing to remote.
+#
+# Runs `task test` (unit + integration tests with race detector) in addition
+# to the architecture checks from pre-commit. This is the second line of
+# defense — pre-commit catches structural violations, pre-push catches
+# behavioral regressions.
+#
+# INSTALLATION:
+#   cp .githooks/pre-push .git/hooks/pre-push
+#   chmod +x .git/hooks/pre-push
+#
+# Or configure git to use the .githooks directory:
+#   git config core.hooksPath .githooks
+#
+# WHY IT HELPS AGENTS: An agent pushing changes will trigger this hook,
+# ensuring tests pass before code reaches the remote. This prevents broken
+# builds in CI and gives the agent immediate feedback on regressions.
+set -euo pipefail
+
+echo "Running full test suite (task test)..."
+if task test 2>&1; then
+    echo "✓ Pre-push: all tests passed."
+else
+    echo "✗ Pre-push: tests FAILED. Push aborted."
+    echo "  Run 'task test' to see details."
+    exit 1
+fi

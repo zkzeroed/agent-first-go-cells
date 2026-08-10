@@ -1,0 +1,11 @@
+id: greeting-render
+purpose: "Render greetings over HTTP"
+entrypoints:
+  - file: api/api.go
+    symbol: Handler
+dependencies:
+  - greeting-compose
+validation:
+  - go test ./internal/cells/greeting-render/...
+invariants:
+  - "Invalid names return HTTP 400"

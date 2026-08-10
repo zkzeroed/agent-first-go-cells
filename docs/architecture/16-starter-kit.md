@@ -24,4 +24,6 @@ task index
 task ready
 ```
 
-The scaffolder validates IDs and creates a compilable flat or domain skeleton. For a domain sub-action, use `task new-cell ID=users/user-invite`.
+The scaffolder validates IDs, refuses to overwrite an existing cell path, and
+creates a compilable flat or domain skeleton. For a domain sub-action, use
+`task new-cell ID=users/user-invite`.

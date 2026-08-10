@@ -18,7 +18,8 @@ Rules:
 1. Cell A may import Cell B's `api` package.
 2. Cell A must not import Cell B's implementation package or subpackages.
 3. The dependency must be listed in Cell A's `cell.yaml` `dependencies` field.
-4. Structural test (`TestCellImportsUseAPIPackages`) enforces this via AST analysis.
+4. Manifest validation verifies that direct cell API imports and declared
+   dependency IDs match exactly; structural tests separately enforce the API-only path.
 
 ## 8.2 Wiring File (`internal/app/wiring.go`)
 

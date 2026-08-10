@@ -23,15 +23,20 @@ if ! [[ "${id}" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*(/[a-z][a-z0-9]*(-[a-z0-9]+)*)?$ 
 fi
 path="internal/cells/${id}"
 name=$(basename "${id}" | tr -d '-')
-mkdir -p "${path}"
+if [[ -e "${path}" ]]; then
+  echo "cell path already exists: ${path}" >&2
+  exit 1
+fi
+mkdir -p "$(dirname "${path}")"
+mkdir "${path}"
 mkdir -p "${path}/api"
 
 cat > "${path}/cell.yaml" <<EOF
 id: ${id}
 purpose: "TODO: describe what this cell does"
 entrypoints:
-  - file: ${name}.go
-    symbol: TODO
+  - file: api/api.go
+    symbol: Service
 dependencies: []
 validation:
   - go test ./internal/cells/${id}/...
@@ -50,7 +55,7 @@ package api
 
 // Service is the behavior other cells may depend on.
 // TODO: Define the public methods and types for this cell.
-type Service interface{}
+type Service = any
 EOF
 
 cat > "${path}/${name}.go" <<EOF

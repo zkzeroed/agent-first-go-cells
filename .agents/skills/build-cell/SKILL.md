@@ -127,6 +127,11 @@ Write table-driven tests. Use `t.Context()` (Go 1.24+). Test the service, not th
 
 Declare metadata, dependencies, and validation commands.
 
+Each entrypoint must name a Go file within this cell and a top-level symbol it
+declares. Every listed dependency must correspond to a direct import of that
+cell's `api` package; complete the source and manifest together before running
+`task index`.
+
 ```yaml
 id: user-authenticate
 purpose: "Authenticate users by email and password"

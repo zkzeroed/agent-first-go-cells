@@ -4,7 +4,7 @@ Guardrails are executable. The task names below are the source of truth; use `ta
 
 | Guardrail | Command | Enforces |
 | --- | --- | --- |
-| Manifests | `task check-manifests` | strict YAML, IDs, entrypoints, dependencies, validation |
+| Manifests | `task check-manifests` | strict YAML, resolved entrypoints, exact direct API dependencies, validation |
 | Generated metadata | `task check-index` | fresh index and context packs |
 | Structure | `task structure-test` | cell schema, API imports, size limits, no `init()` |
 | Import policy | `task policy` | internal dependency direction and allow/deny rules |

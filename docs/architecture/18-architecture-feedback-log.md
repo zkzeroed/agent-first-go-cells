@@ -40,6 +40,26 @@ Use this format for each entry:
 
 ## Log Entries
 
+### 2026-08-10 — Make impact follow generated guide context
+
+- **Context:** Revalidated impact output against the generated context-pack inputs before extending agent feedback.
+- **What worked:** Manifests expose a deterministic dependency graph suitable for breadth-first downstream analysis.
+- **Difficulty:** Cell-local `AGENTS.md` changes changed generated context but were absent from impact, and only direct dependents were reported.
+- **Cause:** File filtering covered only Go/YAML and dependency traversal stopped after one hop.
+- **Fix applied:** Impact now maps cell-local guides, uses directory-boundary ownership, and reports sorted transitive downstream cells.
+- **Suggested improvement:** Keep the analyzer limited to declared cell relationships; dynamic runtime coupling belongs in broader integration validation.
+- **Files/commands:** `scripts/impact/`, `docs/architecture/07-impact-analysis.md`, `task impact`.
+
+### 2026-08-10 — Verify metadata against the source graph
+
+- **Context:** Revalidated the agent navigation and validation loop before extending its guardrails.
+- **What worked:** Manifests, API packages, and generated context packs already provide a compact model agents can navigate.
+- **Difficulty:** Entrypoint symbols and dependency declarations could drift from source while metadata checks still passed.
+- **Cause:** Parsing retained only entrypoint paths, and import policy validated allowed paths without comparing them to the manifest graph.
+- **Fix applied:** Scaffolders now fail safely on existing paths and emit valid API entrypoints; metadata validation resolves entrypoint files/symbols and exact direct API dependencies.
+- **Suggested improvement:** Keep this AST-level check focused on declared cell boundaries; add type-checking only if evidence shows syntax-level validation is insufficient.
+- **Files/commands:** `scripts/new-cell.sh`, `scripts/new-domain.sh`, `scripts/manifest/`, `task check-manifests`.
+
 ### 2026-08-10 — Domain example completes the schema exercise
 
 - **Context:** Built a nested `profiles/profile-create` domain action after a cold-start documentation and skill walkthrough.

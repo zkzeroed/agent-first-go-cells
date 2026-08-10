@@ -116,6 +116,9 @@ func generate(root string) error {
 	if err != nil {
 		return err
 	}
+	if err := manifest.ValidateSourceAt(root, manifests); err != nil {
+		return err
+	}
 
 	hash := computeHash(manifests)
 	index := buildIndex(manifests)
@@ -135,6 +138,9 @@ func generate(root string) error {
 func printJSON(root string) error {
 	manifests, err := manifest.FindAllAt(root)
 	if err != nil {
+		return err
+	}
+	if err := manifest.ValidateSourceAt(root, manifests); err != nil {
 		return err
 	}
 
@@ -169,6 +175,9 @@ func buildIndex(manifests []manifest.Manifest) CellIndex {
 func checkStale(root string) error {
 	manifests, err := manifest.FindAllAt(root)
 	if err != nil {
+		return err
+	}
+	if err := manifest.ValidateSourceAt(root, manifests); err != nil {
 		return err
 	}
 

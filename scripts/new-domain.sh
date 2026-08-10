@@ -23,14 +23,19 @@ if ! [[ "${id}" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]]; then
 fi
 path="internal/cells/${id}"
 name=$(basename "${id}" | tr -d '-')
-mkdir -p "${path}"
+if [[ -e "${path}" ]]; then
+  echo "cell path already exists: ${path}" >&2
+  exit 1
+fi
+mkdir -p "$(dirname "${path}")"
+mkdir "${path}"
 mkdir -p "${path}/api"
 
 cat > "${path}/cell.yaml" <<EOF
 id: ${id}
 purpose: "TODO: describe what this domain cell does"
 entrypoints:
-  - file: cell.go
+  - file: api/api.go
     symbol: Cell
 dependencies: []
 validation:
@@ -51,7 +56,7 @@ package api
 
 // Cell is the public behavior exposed by this domain.
 // TODO: Define domain-level behavior shared by sub-actions.
-type Cell interface{}
+type Cell = any
 EOF
 
 cat > "${path}/cell.go" <<EOF

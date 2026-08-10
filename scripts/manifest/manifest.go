@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
 	"io/fs"
 	"os"
@@ -24,6 +27,7 @@ type Manifest struct {
 	ID            string
 	Purpose       string
 	Entrypoints   []string
+	Symbols       []string
 	Dependencies  []string
 	Validation    []string
 	Invariants    []string
@@ -134,12 +138,169 @@ func Parse(content string) (Manifest, error) {
 		if entrypoint.File == "" {
 			return Manifest{}, errors.New("entrypoints must each specify file")
 		}
+		if entrypoint.Symbol == "" {
+			return Manifest{}, errors.New("entrypoints must each specify symbol")
+		}
 		m.Entrypoints = append(m.Entrypoints, entrypoint.File)
+		m.Symbols = append(m.Symbols, entrypoint.Symbol)
 	}
 	if err := validateOne(m); err != nil {
 		return Manifest{}, err
 	}
 	return m, nil
+}
+
+// ValidateSourceAt verifies that manifests match the cell source they describe.
+// It checks declared entrypoints and direct imports of other cell API packages.
+func ValidateSourceAt(root string, manifests []Manifest) error {
+	if len(manifests) == 0 {
+		return nil
+	}
+	modulePath, err := modulePathAt(root)
+	if err != nil {
+		return err
+	}
+	for _, m := range manifests {
+		if err := validateEntrypoints(root, m); err != nil {
+			return err
+		}
+		if err := validateImports(root, modulePath, m, manifests); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func modulePathAt(root string) (string, error) {
+	content, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	if err != nil {
+		return "", fmt.Errorf("read module path: %w", err)
+	}
+	for line := range strings.SplitSeq(string(content), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[0] == "module" {
+			return fields[1], nil
+		}
+	}
+	return "", errors.New("module directive not found in go.mod")
+}
+
+func validateEntrypoints(root string, m Manifest) error {
+	if len(m.Entrypoints) != len(m.Symbols) {
+		return fmt.Errorf("cell %q has mismatched entrypoint files and symbols", m.ID)
+	}
+	for i, file := range m.Entrypoints {
+		path, err := cellFilePath(root, m.Dir, file)
+		if err != nil {
+			return fmt.Errorf("cell %q entrypoint %q: %w", m.ID, file, err)
+		}
+		parsed, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+		if err != nil {
+			return fmt.Errorf("cell %q entrypoint %q: parse Go source: %w", m.ID, file, err)
+		}
+		if !declaresSymbol(parsed, m.Symbols[i]) {
+			return fmt.Errorf("cell %q entrypoint %q does not declare symbol %q", m.ID, file, m.Symbols[i])
+		}
+	}
+	return nil
+}
+
+func cellFilePath(root, cellDir, name string) (string, error) {
+	if filepath.IsAbs(name) || filepath.Ext(name) != ".go" {
+		return "", errors.New("file must be a relative Go source path")
+	}
+	path := filepath.Clean(filepath.Join(root, cellDir, name))
+	base := filepath.Clean(filepath.Join(root, cellDir)) + string(filepath.Separator)
+	if !strings.HasPrefix(path, base) {
+		return "", errors.New("file must stay within the cell directory")
+	}
+	return path, nil
+}
+
+func declaresSymbol(file *ast.File, symbol string) bool {
+	for _, decl := range file.Decls {
+		switch decl := decl.(type) {
+		case *ast.FuncDecl:
+			if decl.Recv == nil && decl.Name.Name == symbol {
+				return true
+			}
+		case *ast.GenDecl:
+			for _, spec := range decl.Specs {
+				if namedSpec(spec, symbol) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func namedSpec(spec ast.Spec, symbol string) bool {
+	switch spec := spec.(type) {
+	case *ast.TypeSpec:
+		return spec.Name.Name == symbol
+	case *ast.ValueSpec:
+		return slices.ContainsFunc(spec.Names, func(name *ast.Ident) bool { return name.Name == symbol })
+	default:
+		return false
+	}
+}
+
+func validateImports(root, modulePath string, m Manifest, manifests []Manifest) error {
+	imports, err := cellImports(root, m)
+	if err != nil {
+		return err
+	}
+	used := make(map[string]struct{}, len(m.Dependencies))
+	for importPath := range imports {
+		dependency, found := cellDependencyID(modulePath, importPath, manifests)
+		if !found || dependency == m.ID {
+			continue
+		}
+		used[dependency] = struct{}{}
+		if slices.Contains(m.Dependencies, dependency) {
+			continue
+		}
+		return fmt.Errorf("cell %q imports dependency %q without declaring it", m.ID, dependency)
+	}
+	for _, dependency := range m.Dependencies {
+		if _, found := used[dependency]; !found {
+			return fmt.Errorf("cell %q declares dependency %q without importing its api package", m.ID, dependency)
+		}
+	}
+	return nil
+}
+
+func cellImports(root string, m Manifest) (map[string]struct{}, error) {
+	result := map[string]struct{}{}
+	for _, dir := range []string{filepath.Join(root, m.Dir), filepath.Join(root, m.Dir, "api")} {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return nil, fmt.Errorf("read cell source %s: %w", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || filepath.Ext(entry.Name()) != ".go" {
+				continue
+			}
+			file, err := parser.ParseFile(token.NewFileSet(), filepath.Join(dir, entry.Name()), nil, parser.ImportsOnly)
+			if err != nil {
+				return nil, fmt.Errorf("parse cell source %s: %w", entry.Name(), err)
+			}
+			for _, imp := range file.Imports {
+				result[strings.Trim(imp.Path.Value, "\"")] = struct{}{}
+			}
+		}
+	}
+	return result, nil
+}
+
+func cellDependencyID(modulePath, importPath string, manifests []Manifest) (string, bool) {
+	for _, m := range manifests {
+		if importPath == modulePath+"/"+filepath.ToSlash(filepath.Join(m.Dir, "api")) {
+			return m.ID, true
+		}
+	}
+	return "", false
 }
 
 // Validate validates relationships across a complete manifest collection.

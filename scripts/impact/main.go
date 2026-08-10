@@ -12,6 +12,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -182,14 +183,19 @@ func impactFiles(outputs ...string) []string {
 }
 
 func isTrackedForImpact(path string) bool {
-	return path != "" && (strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml"))
+	return path != "" && (strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || isCellAgentsFile(path))
+}
+
+func isCellAgentsFile(path string) bool {
+	path = filepath.ToSlash(path)
+	return filepath.Base(path) == "AGENTS.md" && strings.HasPrefix(path, "internal/cells/")
 }
 
 func mapCells(files []string, manifests []manifest.Manifest) []string {
 	var result []string
 	for _, file := range files {
 		for _, m := range manifests {
-			if strings.HasPrefix(file, m.Dir) && !slices.Contains(result, m.ID) {
+			if isWithinCell(file, m.Dir) && !slices.Contains(result, m.ID) {
 				result = append(result, m.ID)
 			}
 		}
@@ -200,23 +206,29 @@ func mapCells(files []string, manifests []manifest.Manifest) []string {
 	return result
 }
 
-func findAffected(owningCells []string, manifests []manifest.Manifest) []string {
-	var result []string
-	for _, m := range manifests {
-		if dependsOnAny(m, owningCells) && !slices.Contains(owningCells, m.ID) {
-			result = append(result, m.ID)
-		}
-	}
-	return result
+func isWithinCell(file, cellDir string) bool {
+	file = filepath.ToSlash(file)
+	cellDir = strings.TrimSuffix(filepath.ToSlash(cellDir), "/")
+	return file == cellDir || strings.HasPrefix(file, cellDir+"/")
 }
 
-func dependsOnAny(m manifest.Manifest, owningCells []string) bool {
-	for _, owner := range owningCells {
-		if slices.Contains(m.Dependencies, owner) {
-			return true
+func findAffected(owningCells []string, manifests []manifest.Manifest) []string {
+	affected := make(map[string]bool)
+	frontier := unique(slices.Clone(owningCells))
+	for len(frontier) > 0 {
+		current := frontier[0]
+		frontier = frontier[1:]
+		for _, m := range manifests {
+			if !slices.Contains(m.Dependencies, current) || slices.Contains(owningCells, m.ID) || affected[m.ID] {
+				continue
+			}
+			affected[m.ID] = true
+			frontier = append(frontier, m.ID)
 		}
 	}
-	return false
+	result := slices.Collect(maps.Keys(affected))
+	slices.Sort(result)
+	return result
 }
 
 func validationCommands(owningCells []string, affected []string, manifests []manifest.Manifest) []string {
@@ -266,7 +278,7 @@ func printText(report impactReport) {
 	fmt.Println("=== Impact Analysis ===")
 	printSection("Changed files", report.Changed)
 	printSection("Owning cells", report.OwningCells)
-	printSection("Affected cells (depend on changed cells)", report.Affected)
+	printSection("Affected cells (downstream of changed cells)", report.Affected)
 	printSection("Validation commands to run", report.Validation)
 }
 

@@ -49,7 +49,7 @@ This searches cell IDs, purposes, and AGENTS.md content. More precise than grep.
 
 ```bash
 task deps ID=user-authenticate    # who depends on this cell?
-task impact                       # what cells are affected by my changes?
+task impact                       # direct owners and transitive downstream cells
 ```
 
 ### Reading a cell's full context

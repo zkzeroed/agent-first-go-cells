@@ -6,8 +6,16 @@ vars:
   GOLANGCI_LINT_VERSION: v2.12.2
   GOFUMPT_VERSION: v0.10.0
   GOIMPORTS_VERSION: v0.48.0
+  DEFAULT_GOCACHE: '{{.TMPDIR | default "/tmp"}}/go-agent-first-arch/go-build'
+  DEFAULT_CCACHE_DIR: '{{.TMPDIR | default "/tmp"}}/go-agent-first-arch/ccache'
 
 silent: false
+
+# Keep Go and ccache state out of a possibly read-only home directory. Callers
+# can still supply GOCACHE or CCACHE_DIR explicitly when they need their own.
+env:
+  GOCACHE: '{{.GOCACHE | default .DEFAULT_GOCACHE}}'
+  CCACHE_DIR: '{{.CCACHE_DIR | default .DEFAULT_CCACHE_DIR}}'
 
 tasks:
   default:

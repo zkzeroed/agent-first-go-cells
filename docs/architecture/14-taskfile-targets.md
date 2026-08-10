@@ -33,6 +33,10 @@ task ready
 
 Machine-readable forms are available as `cells-json`, `index-json`, `deps-json`, `impact-json`, and `context-json`.
 
+Task commands default `GOCACHE` and `CCACHE_DIR` to a writable temporary
+location so the agent workflow also works in read-only-home sandboxes. Explicit
+caller values take precedence.
+
 `index`, `check-index`, `index-json`, `cells`, `cells-json`, `deps`,
 `deps-json`, `find-cell`, `impact`, `impact-json`, `changed`, and `ready`
 accept `ROOT=<project-path>` for a compatible project, such as the reference

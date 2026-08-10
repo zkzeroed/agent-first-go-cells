@@ -40,10 +40,11 @@ If cells appear in "Dependents", changing the interface may break them.
 
 ### If adding a new dependency:
 
-1. **Add the target cell's exact ID** to `cell.yaml` `dependencies`
-2. **Add to `Deps` struct** in `<name>.go`
-3. **Wire in `internal/app/wiring.go`**
-4. **Validate**: `task index && task test-cell ID=<id> && task doctor`
+1. **Import the target cell's `api` package** where the dependency is used
+2. **Add the target cell's exact ID** to `cell.yaml` `dependencies`
+3. **Add to `Deps` struct** in `<name>.go`
+4. **Wire in `internal/app/wiring.go`**
+5. **Validate**: `task index && task test-cell ID=<id> && task doctor`
 
 ### If adding a new method to the interface:
 

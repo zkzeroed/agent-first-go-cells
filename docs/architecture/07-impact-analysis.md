@@ -6,10 +6,15 @@ Go-based impact analyzer. More maintainable and testable than shell scripts.
 
 **Algorithm:**
 
-1. Read tracked changes plus untracked files to get changed files.
-2. Map each file to its owning cell (by directory path).
-3. Read `cell.yaml` manifests to find cells with an exact dependency on the changed cell ID.
-4. Print: changed files → owning cells → affected cells → required validation commands.
+1. Read tracked changes plus untracked files to get changed files. In addition to
+   Go and YAML files, include a changed `AGENTS.md` when it is local to a cell.
+2. Map each file to its owning cell using directory-segment boundaries, so a
+   change under `orders-create/` cannot be attributed to `orders/`.
+3. Read `cell.yaml` manifests to find all direct and transitive downstream
+   dependents of the changed cell IDs. Affected cell IDs are sorted for stable
+   output.
+4. Print: changed files → owning cells → downstream affected cells → required
+   validation commands.
 
 **Output example:**
 

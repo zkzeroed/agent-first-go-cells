@@ -16,8 +16,8 @@
 | ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **More boilerplate per cell** | Agent generates more files                  | `task new-cell ID=<id>` scaffolds all files. Fixed schema = mechanical generation.                   |
 | **Wiring file bottleneck**    | Multiple agents coordinate on `wiring.go`   | Atomic updates, < 300 LOC, split by concern. Cell-to-cell imports reduce wiring.                     |
-| **Manifest maintenance**      | `cell.yaml` can drift                       | `task check-manifests` in CI. Only 5 mandatory fields — minimal overhead.                            |
+| **Manifest maintenance**      | `cell.yaml` can drift                       | `task check-manifests` resolves entrypoints and exact direct API dependencies.                         |
 | **Index staleness**           | `gen/cells.json` can become stale           | Hash-based `task check-index` in CI. No git dependency.                                              |
-| **Impact analysis limitations** | Declared metadata may miss undeclared coupling | Go-based and testable. Covers cell ownership plus declared dependencies; broader tests catch remaining. |
+| **Impact analysis limitations** | Dynamic or non-cell coupling is outside the graph | Go-based and testable. Covers cell-local guides, ownership, and transitive declared dependencies. |
 | **Contracts coordination**    | Adding shared interface touches shared file | One file per concern in `contracts/`. Cell-to-cell interfaces stay in cells.                         |
 | **Over-normalization**        | Too many tiny cells                         | Sub-action guidance: use sub-actions within domain cells for related operations.                     |

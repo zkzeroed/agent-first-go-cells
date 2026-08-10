@@ -141,6 +141,13 @@ Fast post-edit validation:
 task quick-check      # structure + policy + manifests + index (no tests)
 ```
 
+### Task environment
+
+Task commands place Go and ccache state in a writable temporary directory by
+default. This keeps the standard validation loop reliable in agent sandboxes
+with read-only home directories. Set `GOCACHE` or `CCACHE_DIR` explicitly when
+your environment needs a different cache location.
+
 ## Git Hooks
 
 This repo includes git hooks in `.githooks/`:

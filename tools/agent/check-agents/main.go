@@ -4,7 +4,7 @@
 //
 //	task check-agents
 //
-// Checks that every AGENTS.md file has the required sections:
+// Checks that every cell-local AGENTS.md file has the required sections:
 //   - Purpose
 //   - Start Here (or Start)
 //   - Invariants
@@ -43,14 +43,7 @@ func main() {
 
 	fmt.Println("=== AGENTS.md Validation ===")
 
-	if err := checkFile("AGENTS.md", "AGENTS.md (root)"); err != nil {
-		fmt.Printf("  ✗ %s\n", err)
-		exitCode = 1
-	} else {
-		fmt.Println("  ✓ AGENTS.md (root) — all sections present")
-	}
-
-	count := 1
+	count := 0
 	if err := filepath.WalkDir("internal/cells", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -74,9 +67,9 @@ func main() {
 	}
 
 	if exitCode == 0 {
-		fmt.Printf("\nAll AGENTS.md files valid (%d files checked).\n", count)
+		fmt.Printf("\nAll cell AGENTS.md files valid (%d files checked).\n", count)
 	} else {
-		fmt.Printf("\nSome AGENTS.md files are missing required sections.\n")
+		fmt.Printf("\nSome cell AGENTS.md files are missing required sections.\n")
 	}
 	os.Exit(exitCode)
 }

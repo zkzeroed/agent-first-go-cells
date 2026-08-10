@@ -47,6 +47,11 @@
     "save": "all"
   },
   {
+    "label": "Agent: Secret Scan",
+    "command": "task secrets",
+    "save": "all"
+  },
+  {
     "label": "Reference: Cells",
     "command": "task cells ROOT=examples/reference-project"
   },

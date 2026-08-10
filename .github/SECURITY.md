@@ -32,3 +32,13 @@ Workflows should follow least-privilege defaults:
 - Do not print secrets or sensitive environment data.
 - Prefer short-lived credentials and OIDC over long-lived cloud secrets.
 - Keep Actions dependencies updated with Dependabot.
+
+## Secret Scanning
+
+Gitleaks scans the working tree in the pre-commit hook and scans repository
+history in CI. Run `task secrets` before committing when the hook is not
+installed. Run `task secrets-history` for an initial audit or when responding
+to a suspected credential exposure.
+
+If a secret is detected, remove it, revoke or rotate the credential, and assess
+whether the Git history also needs remediation before continuing.

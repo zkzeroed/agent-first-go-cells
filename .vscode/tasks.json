@@ -82,6 +82,14 @@
       "problemMatcher": []
     },
     {
+      "label": "Agent: Secret Scan",
+      "type": "process",
+      "command": "task",
+      "args": ["secrets"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
       "label": "Agent: Setup",
       "type": "process",
       "command": "task",

@@ -23,6 +23,7 @@
 
 - [ ] `task doctor`
 - [ ] `task test`
+- [ ] `task secrets`
 - [ ] `task impact`, if cell behavior or dependencies changed
 
 ## Cell architecture feedback

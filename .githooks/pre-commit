@@ -2,8 +2,9 @@
 # pre-commit hook — fast architecture checks before each commit.
 #
 # Runs `task doctor` (manifests, index, structure tests, AGENTS.md, import policy)
-# but skips full build and test suite for speed. Fails the commit if any
-# architecture invariant is violated.
+# and `task secrets` (hardcoded-secret scan), but skips the full build and test
+# suite for speed. Fails the commit if an architecture invariant or potential
+# secret is found.
 #
 # INSTALLATION:
 #   cp .githooks/pre-commit .git/hooks/pre-commit
@@ -23,5 +24,14 @@ if task doctor 2>&1; then
 else
     echo "✗ Pre-commit: architecture checks FAILED. Commit aborted."
     echo "  Run 'task doctor' to see details."
+    exit 1
+fi
+
+echo "Scanning for hardcoded secrets (task secrets)..."
+if task secrets 2>&1; then
+    echo "✓ Pre-commit: secret scan passed."
+else
+    echo "✗ Pre-commit: secret scan FAILED. Commit aborted."
+    echo "  Run 'task secrets' to see details."
     exit 1
 fi

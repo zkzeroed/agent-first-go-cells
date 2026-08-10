@@ -45,6 +45,7 @@ task changed                 # Status + impact (what did I touch?)
 task verify-scope ID=<cell-id> # Reject undeclared edits
 task quick-check             # Fast post-edit validation (no tests)
 task ready                   # Pre-handoff: doctor + impact + test + status
+task secrets                 # Scan the working tree for hardcoded secrets
 ```
 
 ## Cell architecture Feedback

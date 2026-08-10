@@ -41,9 +41,9 @@ It accepts `ROOT=<project-path>` for compatible nested projects.
 | Schema, imports, size, and `init()` | `task structure-test` |
 | Import direction | `task policy` |
 | Required agent-guide sections | `task check-agents` |
+| Hardcoded-secret detection | `task secrets` |
 | Fast post-edit feedback | `task quick-check` |
 | Full handoff | `task ready` |
 
 Run `task index` after a manifest or cell-guide change. Use `task fuzz` for a
 bounded manifest-parser hardening pass when changing manifest parsing.
-

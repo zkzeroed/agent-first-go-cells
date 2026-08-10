@@ -99,6 +99,24 @@ jobs:
           version: v2.12.2
           working-directory: examples/reference-project
 
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: architecture
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan for hardcoded secrets
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.18.4
+
   vuln:
     name: Vulnerability scan
     runs-on: ubuntu-latest

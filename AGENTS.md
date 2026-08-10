@@ -142,6 +142,7 @@ Run these commands before committing:
 task ready            # Pre-handoff: doctor + impact + test + status
 task doctor           # Fast architecture health check
 task test             # Full test suite with race detector
+task secrets          # Scan the working tree for hardcoded secrets
 task fuzz             # Optional bounded fuzzing for manifest parsing
 ```
 
@@ -163,7 +164,7 @@ location.
 
 This repo includes git hooks in `.githooks/`:
 
-- **pre-commit:** Runs `task doctor` (architecture invariants)
+- **pre-commit:** Runs `task doctor` and `task secrets` (architecture invariants and hardcoded-secret detection)
 - **pre-push:** Runs `task test` (full test suite)
 
 Install with: `task install-hooks`
@@ -234,6 +235,7 @@ task test-cell ID=<id>        # Test the cell you changed
 task impact                   # Check what else is affected
 task verify-scope ID=<id>     # Confirm scope before handoff
 task doctor                   # Verify architecture invariants
+task secrets                  # Scan the working tree for hardcoded secrets
 ```
 
 ### Before committing
@@ -241,6 +243,7 @@ task doctor                   # Verify architecture invariants
 ```bash
 task doctor                   # architecture health
 task test                     # Full tests
+task secrets                  # Hardcoded-secret scan
 ```
 
 ### architecture feedback

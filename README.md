@@ -100,11 +100,14 @@ internal/cells/user-authenticate/
 | Change impact | `task changed` | Git state and affected cells |
 | Handoff | `task ready` | Doctor, impact analysis, tests, and state |
 | Lint | `task lint` | Bootstrap tooling and reference module |
+| Secret scan | `task secrets` | Working-tree scan before each commit |
 | Parser hardening | `task fuzz` | Bounded fuzzing for manifest input |
 
 Install the provided Git hooks with `task install-hooks`.
 `task test` covers the bootstrap tooling, application tests, and reference
 project; `task fuzz` is intentionally opt-in rather than part of every handoff.
+`task secrets-history` scans all reachable Git history and is appropriate for
+an initial audit or an incident response.
 Run `task --list` for the complete command surface; [agent operations](docs/architecture/04-agent-operations.md)
 explains the navigation and machine-readable variants.
 

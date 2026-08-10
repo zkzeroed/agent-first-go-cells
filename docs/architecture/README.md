@@ -36,16 +36,13 @@ task ready
 
 ## Reference
 
-Read only the chapter relevant to the task:
+Read only the document relevant to the task:
 
-1. [Core principles](02-core-principles.md)
-2. [Directory tree](03-directory-tree.md)
-3. [Cell schema](04-cell-file-schema.md)
-4. [Manifest schema](05-manifest-schema.md)
-5. [Generated artifacts](06-generated-artifacts.md)
-6. [Dependency wiring](08-dependency-wiring.md)
-7. [Guardrails](10-guardrail-tooling.md)
-8. [Task targets](14-taskfile-targets.md)
-9. [Agent conventions](17-agent-conventions.md)
+1. [Architecture principles](01-architecture-principles.md)
+2. [Cell model](02-cell-model.md)
+3. [Boundaries and guardrails](03-boundaries-and-guardrails.md)
+4. [Agent operations](04-agent-operations.md)
+5. [Bootstrap and reference project](05-bootstrap-and-reference.md)
+6. [Architecture feedback log](06-architecture-feedback-log.md)
 
 The repository files and Taskfile are authoritative where they differ from prose.

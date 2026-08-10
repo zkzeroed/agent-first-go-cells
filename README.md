@@ -105,7 +105,7 @@ internal/cells/user-authenticate/
 Install the provided Git hooks with `task install-hooks`.
 `task test` covers the bootstrap tooling, application tests, and reference
 project; `task fuzz` is intentionally opt-in rather than part of every handoff.
-Run `task --list` for the complete command surface; the [Task target reference](docs/architecture/14-taskfile-targets.md)
+Run `task --list` for the complete command surface; [agent operations](docs/architecture/04-agent-operations.md)
 explains the navigation and machine-readable variants.
 
 ## Agent integration
@@ -145,10 +145,9 @@ task ready ROOT=examples/reference-project
 
 ## Architecture reference
 
-The [architecture guide](docs/architecture/README.md) is intentionally
-chaptered: read the chapter relevant to the task rather than loading a large
-document. The Taskfile and repository files are authoritative where prose and
-behavior differ.
+The [architecture guide](docs/architecture/README.md) is organized into focused
+operational references: read only the document relevant to the task. The
+Taskfile and repository files are authoritative where prose and behavior differ.
 
 ## License
 

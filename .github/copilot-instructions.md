@@ -42,10 +42,11 @@ Run the most specific relevant checks, then broader checks:
 task orient                  # First command: cells + doctor + status
 task test-cell ID=<cell-id>  # Test the cell you changed
 task changed                 # Status + impact (what did I touch?)
+task verify-scope ID=<cell-id> # Reject undeclared edits
 task quick-check             # Fast post-edit validation (no tests)
 task ready                   # Pre-handoff: doctor + impact + test + status
 ```
 
 ## Cell architecture Feedback
 
-Update `docs/architecture/18-architecture-feedback-log.md` only when work reveals a learning that directly affects the cell architecture: cell schema, inside-out build flow, manifests, wiring/dependencies, context packs, impact analysis, or structural guardrails. Do not log generic repository maintenance.
+Update `docs/architecture/06-architecture-feedback-log.md` only when work reveals a learning that directly affects the cell architecture: cell schema, inside-out build flow, manifests, wiring/dependencies, context packs, impact analysis, or structural guardrails. Do not log generic repository maintenance.

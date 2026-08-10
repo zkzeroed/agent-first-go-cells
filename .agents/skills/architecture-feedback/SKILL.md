@@ -14,7 +14,7 @@ The goal is to improve the cell model itself: how cells are named, scaffolded, s
 Write durable observations to:
 
 ```text
-docs/architecture/18-architecture-feedback-log.md
+docs/architecture/06-architecture-feedback-log.md
 ```
 
 Do not create scattered notes elsewhere unless the user asks. Keep architecture-learning entries centralized in this log.

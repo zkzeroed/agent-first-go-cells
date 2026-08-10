@@ -12,7 +12,7 @@ func TestOperationalDocsAvoidRetiredArchitectureTerms(t *testing.T) {
 	root := projectRoot(t)
 	paths := []string{filepath.Join(root, "README.md"), filepath.Join(root, "AGENTS.md")}
 	err := filepath.WalkDir(filepath.Join(root, "docs/architecture"), func(path string, d os.DirEntry, err error) error {
-		if path == filepath.Join(root, "docs/architecture/18-architecture-feedback-log.md") {
+		if path == filepath.Join(root, "docs/architecture/06-architecture-feedback-log.md") {
 			return err
 		}
 		if err != nil || d.IsDir() {
@@ -42,9 +42,9 @@ func TestOperationalDocsAvoidRetiredArchitectureTerms(t *testing.T) {
 func TestOperationalDocsDescribeCurrentBoundaries(t *testing.T) {
 	root := projectRoot(t)
 	checks := map[string][]string{
-		"README.md": {"api/api.go", "API contract"},
-		"docs/architecture/05-manifest-schema.md":  {"exact IDs of other cells"},
-		"docs/architecture/14-taskfile-targets.md": {"index-json", "cells-json", "deps-json", "impact-json", "context` operates"},
+		"README.md":                                {"api/api.go", "API contract"},
+		"docs/architecture/02-cell-model.md":       {"exact existing", "cell IDs"},
+		"docs/architecture/04-agent-operations.md": {"task --list", "GOLANGCI_LINT_CACHE"},
 		"examples/reference-project/README.md":     {"greeting-compose", "token-issue"},
 	}
 	for path, required := range checks {
@@ -62,19 +62,19 @@ func TestOperationalDocsDescribeCurrentBoundaries(t *testing.T) {
 
 func TestOperationalDocsDescribeCurrentLinting(t *testing.T) {
 	root := projectRoot(t)
-	content, err := os.ReadFile(filepath.Join(root, "docs/architecture/02-core-principles.md"))
+	content, err := os.ReadFile(filepath.Join(root, "docs/architecture/01-architecture-principles.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(content)
 	for _, required := range []string{"AST-based structural tests", "cyclop", "maximum 16"} {
 		if !strings.Contains(text, required) {
-			t.Errorf("core principles must document %q", required)
+			t.Errorf("architecture principles must document %q", required)
 		}
 	}
 	for _, retired := range []string{"funlen", "gocognit", "200 LOC warning", "25 LOC warning"} {
 		if strings.Contains(text, retired) {
-			t.Errorf("core principles contains retired linting claim %q", retired)
+			t.Errorf("architecture principles contains retired linting claim %q", retired)
 		}
 	}
 }

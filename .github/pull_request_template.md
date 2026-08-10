@@ -27,4 +27,4 @@
 
 ## Cell architecture feedback
 
-If this change revealed friction or an improvement opportunity that directly affects the cell architecture — cell schema, inside-out build flow, manifests, wiring/dependencies, context packs, impact analysis, or structural guardrails — add an entry to `docs/architecture/18-architecture-feedback-log.md`. Do not log generic repository maintenance.
+If this change revealed friction or an improvement opportunity that directly affects the cell architecture — cell schema, inside-out build flow, manifests, wiring/dependencies, context packs, impact analysis, or structural guardrails — add an entry to `docs/architecture/06-architecture-feedback-log.md`. Do not log generic repository maintenance.

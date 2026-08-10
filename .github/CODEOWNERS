@@ -1,0 +1,15 @@
+# CODEOWNERS requests review for sensitive architecture, policy, and CI paths.
+
+* @sploitzberg
+
+/.github/ @sploitzberg
+/.githooks/ @sploitzberg
+/.agents/ @sploitzberg
+/.devin/ @sploitzberg
+/policy/ @sploitzberg
+/scripts/ @sploitzberg
+/docs/architecture/ @sploitzberg
+/AGENTS.md @sploitzberg
+/.rules @sploitzberg
+/.windsurfrules @sploitzberg
+/Taskfile.yml @sploitzberg

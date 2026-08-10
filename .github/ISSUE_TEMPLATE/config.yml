@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/sploitzberg/go-agent-first-arch/security/advisories/new
+    about: Please report suspected vulnerabilities privately.
+  - name: architecture documentation
+    url: https://github.com/sploitzberg/go-agent-first-arch/tree/main/docs/architecture
+    about: Read the architecture docs before proposing structural changes.

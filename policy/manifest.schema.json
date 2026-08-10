@@ -1,0 +1,44 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "cell.yaml manifest schema",
+	"description": "Machine-readable manifest for Agent-First Go architecture cells",
+	"type": "object",
+	"required": ["id", "purpose", "entrypoints", "dependencies", "validation"],
+	"properties": {
+		"id": {
+			"type": "string",
+			"pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+			"description": "Behavior-first kebab-case identifier. Must match directory name."
+		},
+		"purpose": {
+			"type": "string",
+			"description": "One-sentence description of what the cell does."
+		},
+		"entrypoints": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["file", "symbol"],
+				"properties": {
+					"file": { "type": "string" },
+					"symbol": { "type": "string" }
+				}
+			},
+			"minItems": 1
+		},
+		"dependencies": {
+			"type": "array",
+			"items": { "type": "string" }
+		},
+		"validation": {
+			"type": "array",
+			"items": { "type": "string" },
+			"minItems": 1
+		},
+		"invariants": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Optional (Standard+ tier). Properties that must always hold."
+		}
+	}
+}

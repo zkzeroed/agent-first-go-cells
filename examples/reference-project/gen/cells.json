@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "agent-first/v2",
+  "hash": "sha256:6823234e99a4861f2659170f20e7ae7eebff7ed2f335419b55f24579c592a087",
+  "cells": [
+    {
+      "id": "greeting-compose",
+      "path": "internal/cells/greeting-compose",
+      "package": "greetingcompose",
+      "purpose": "Compose a greeting from a validated name",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [],
+      "validation": [
+        "go test ./internal/cells/greeting-compose/..."
+      ]
+    },
+    {
+      "id": "greeting-render",
+      "path": "internal/cells/greeting-render",
+      "package": "greetingrender",
+      "purpose": "Render greetings over HTTP",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [
+        "greeting-compose"
+      ],
+      "validation": [
+        "go test ./internal/cells/greeting-render/..."
+      ]
+    },
+    {
+      "id": "profiles",
+      "path": "internal/cells/profiles",
+      "package": "profiles",
+      "purpose": "Own shared profile vocabulary and repository contracts",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [],
+      "validation": [
+        "go test ./internal/cells/profiles/..."
+      ]
+    },
+    {
+      "id": "profiles/profile-create",
+      "path": "internal/cells/profiles/profile-create",
+      "package": "profiles/profilecreate",
+      "purpose": "Create validated profiles using the shared repository contract",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [
+        "profiles"
+      ],
+      "validation": [
+        "go test ./internal/cells/profiles/profile-create/..."
+      ]
+    },
+    {
+      "id": "token-issue",
+      "path": "internal/cells/token-issue",
+      "package": "tokenissue",
+      "purpose": "Issue random opaque tokens and retain only their SHA-256 digests",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [],
+      "validation": [
+        "go test ./internal/cells/token-issue/..."
+      ]
+    },
+    {
+      "id": "token-render",
+      "path": "internal/cells/token-render",
+      "package": "tokenrender",
+      "purpose": "Render newly issued opaque tokens over HTTP",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [
+        "token-issue"
+      ],
+      "validation": [
+        "go test ./internal/cells/token-render/..."
+      ]
+    }
+  ]
+}

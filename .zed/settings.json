@@ -1,0 +1,31 @@
+{
+  "format_on_save": "on",
+  "formatter": "language_server",
+  "tab_size": 4,
+  "languages": {
+    "Go": {
+      "tab_size": 4,
+      "format_on_save": "on",
+      "formatter": "language_server",
+      "preferred_line_length": 100
+    },
+    "YAML": {
+      "formatter": "language_server"
+    }
+  },
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/node_modules",
+    "**/gen",
+    "**/bin"
+  ],
+  "lsp": {
+    "gopls": {
+      "settings": {
+        "gopls": {
+          "staticcheck": true
+        }
+      }
+    }
+  }
+}

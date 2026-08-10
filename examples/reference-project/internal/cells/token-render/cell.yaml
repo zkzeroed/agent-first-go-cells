@@ -1,0 +1,11 @@
+id: token-render
+purpose: "Render newly issued opaque tokens over HTTP"
+entrypoints:
+  - file: api/api.go
+    symbol: Handler
+dependencies:
+  - token-issue
+validation:
+  - go test ./internal/cells/token-render/...
+invariants:
+  - "Empty subjects return HTTP 400"

@@ -1,0 +1,47 @@
+name: Feature or cell request
+description: Propose a new capability, cell, tool, or workflow improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What user or agent workflow should this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature, cell, command, or documentation change.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - New flat cell
+        - New domain cell
+        - Existing cell change
+        - Tooling or Taskfile target
+        - Documentation
+        - CI or GitHub configuration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: architecture
+    attributes:
+      label: architecture considerations
+      description: Cell ID, dependencies, invariants, validation commands, or trade-offs.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

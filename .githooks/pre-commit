@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# pre-commit hook — fast architecture checks before each commit.
+#
+# Runs `task doctor` (manifests, index, structure tests, AGENTS.md, import policy)
+# but skips full build and test suite for speed. Fails the commit if any
+# architecture invariant is violated.
+#
+# INSTALLATION:
+#   cp .githooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Or configure git to use the .githooks directory:
+#   git config core.hooksPath .githooks
+#
+# WHY IT HELPS AGENTS: An agent using git to commit will trigger this hook
+# automatically, catching architecture violations before they enter the repo.
+# This is the first line of defense — CI is the second.
+set -euo pipefail
+
+echo "Running architecture health check (task doctor)..."
+if task doctor 2>&1; then
+    echo "✓ Pre-commit: architecture checks passed."
+else
+    echo "✗ Pre-commit: architecture checks FAILED. Commit aborted."
+    echo "  Run 'task doctor' to see details."
+    exit 1
+fi

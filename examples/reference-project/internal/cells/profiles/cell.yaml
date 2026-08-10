@@ -1,0 +1,8 @@
+id: profiles
+purpose: "Own shared profile vocabulary and repository contracts"
+entrypoints:
+  - file: api/api.go
+    symbol: Repository
+dependencies: []
+validation:
+  - go test ./internal/cells/profiles/...

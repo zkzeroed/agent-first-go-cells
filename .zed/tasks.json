@@ -1,0 +1,54 @@
+[
+  {
+    "label": "Agent: Orient",
+    "command": "task orient"
+  },
+  {
+    "label": "Agent: Changed",
+    "command": "task changed"
+  },
+  {
+    "label": "Agent: Ready",
+    "command": "task ready"
+  },
+  {
+    "label": "Agent: Doctor",
+    "command": "task doctor"
+  },
+  {
+    "label": "Agent: Quick Check",
+    "command": "task quick-check"
+  },
+  {
+    "label": "Agent: Cells",
+    "command": "task cells"
+  },
+  {
+    "label": "Agent: Impact",
+    "command": "task impact"
+  },
+  {
+    "label": "Agent: Setup",
+    "command": "task setup"
+  },
+  {
+    "label": "Agent: Test",
+    "command": "task test"
+  },
+  {
+    "label": "Reference: Cells",
+    "command": "task cells ROOT=examples/reference-project"
+  },
+  {
+    "label": "Reference: Index",
+    "command": "task index ROOT=examples/reference-project"
+  },
+  {
+    "label": "Reference: Impact",
+    "command": "task impact ROOT=examples/reference-project"
+  },
+  {
+    "label": "Reference: Ready",
+    "command": "task ready ROOT=examples/reference-project"
+  }
+]

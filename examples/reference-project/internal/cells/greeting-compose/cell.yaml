@@ -1,0 +1,10 @@
+id: greeting-compose
+purpose: "Compose a greeting from a validated name"
+entrypoints:
+  - file: api/api.go
+    symbol: Composer
+dependencies: []
+validation:
+  - go test ./internal/cells/greeting-compose/...
+invariants:
+  - "Empty names are rejected before store access"

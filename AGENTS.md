@@ -1,16 +1,10 @@
-# AGENTS.md — Root Agent Guide
-
 #
 
-# This file is the first thing an AI agent should read when arriving at this
+This file is the first thing an AI agent should read when arriving at this
+codebase. It provides orientation, operating instructions, and validation
+commands.
 
-# codebase. It provides orientation, operating instructions, and validation
-
-# commands.
-
-#
-
-# For full architecture documentation, see docs/architecture/README.md
+For full architecture documentation, see docs/architecture/README.md
 
 ## Purpose
 

@@ -71,13 +71,6 @@ task quick-check
 task test-cell ID=<cell-id>
 ```
 
-The reference project exercises the architecture without adding starter cells:
-
-```bash
-task cells ROOT=examples/reference-project
-task ready ROOT=examples/reference-project
-```
-
 ## Reliability & Concurrency
 
 - Services are immutable after construction and safe for concurrent use.

@@ -133,7 +133,6 @@ tasks:
     cmds:
       - task: test-unit
       - task: test-integration
-      - task: test-reference
 
   test-unit:
     desc: Run bootstrap unit and tooling tests (fast, no external deps)
@@ -153,11 +152,6 @@ tasks:
           go test -race -count=1 ./test/integration/...
         fi
 
-  test-reference:
-    desc: Run the reference project's tests with the race detector
-    cmds:
-      - (cd examples/reference-project && go test -race -count=1 ./...)
-
   fuzz:
     desc: "Bounded manifest-parser fuzz test. Optional: FUZZ_TIME=30s"
     cmds:
@@ -171,10 +165,9 @@ tasks:
       - go test -race -count=1 -v ./internal/cells/{{.ID}}/...
 
   lint:
-    desc: Run golangci-lint for the bootstrap and reference modules
+    desc: Run golangci-lint for the bootstrap module
     cmds:
       - golangci-lint run ./...
-      - (cd examples/reference-project && golangci-lint run ./...)
 
   lint-cell:
     desc: "Lint a specific cell. Usage: task lint-cell ID=user-authenticate"
@@ -199,29 +192,29 @@ tasks:
       - echo "✓ All manifests valid"
 
   index:
-    desc: "Regenerate indexes. Optional: ROOT=examples/reference-project"
+    desc: "Regenerate indexes. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/index/ --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes regenerated"
 
   check-index:
-    desc: "Verify indexes are fresh. Optional: ROOT=examples/reference-project"
+    desc: "Verify indexes are fresh. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/index/ --check --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes are fresh"
 
   index-json:
-    desc: "Output index JSON. Optional: ROOT=examples/reference-project"
+    desc: "Output index JSON. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/index/ --json --root "{{.ROOT | default "."}}"
 
   impact:
-    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=examples/reference-project"
+    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/impact/ --root "{{.ROOT | default "."}}"
 
   impact-json:
-    desc: "Show affected cells for changed files as JSON. Optional: ROOT=examples/reference-project"
+    desc: "Show affected cells for changed files as JSON. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/impact/ --json --root "{{.ROOT | default "."}}"
 
@@ -309,24 +302,24 @@ tasks:
       - go test -run "Test(Cell|No|Files|Every)" ./tools/agent/structure/...
 
   cells:
-    desc: "List cells. Optional: ROOT=examples/reference-project"
+    desc: "List cells. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/cells/ --root "{{.ROOT | default "."}}"
 
   cells-json:
-    desc: "List cells as JSON. Optional: ROOT=examples/reference-project"
+    desc: "List cells as JSON. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/cells/ --json --root "{{.ROOT | default "."}}"
 
   deps:
-    desc: "Show dependencies. Optional: ROOT=examples/reference-project"
+    desc: "Show dependencies. Optional: ROOT=<project-path>"
     requires:
       vars: [ID]
     cmds:
       - go run ./tools/agent/deps/ --root "{{.ROOT | default "."}}" {{.ID}}
 
   deps-json:
-    desc: "Show dependencies as JSON. Optional: ROOT=examples/reference-project"
+    desc: "Show dependencies. Optional: ROOT=<project-path>"
     requires:
       vars: [ID]
     cmds:
@@ -349,7 +342,7 @@ tasks:
       - python3 -c 'import json, pathlib; print(json.dumps({"id":"{{.ID}}","context":pathlib.Path("gen/context/{{.ID}}.context.md").read_text()}, indent=2))'
 
   find-cell:
-    desc: "Search cells. Optional: ROOT=examples/reference-project"
+    desc: "Search cells. Optional: ROOT=<project-path>"
     requires:
       vars: [QUERY]
     cmds:

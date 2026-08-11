@@ -50,24 +50,5 @@
     "label": "Agent: Secret Scan",
     "command": "task secrets",
     "save": "all"
-  },
-  {
-    "label": "Reference: Cells",
-    "command": "task cells ROOT=examples/reference-project"
-  },
-  {
-    "label": "Reference: Index",
-    "command": "task index ROOT=examples/reference-project",
-    "save": "all"
-  },
-  {
-    "label": "Reference: Impact",
-    "command": "task impact ROOT=examples/reference-project",
-    "save": "all"
-  },
-  {
-    "label": "Reference: Ready",
-    "command": "task ready ROOT=examples/reference-project",
-    "save": "all"
   }
 ]

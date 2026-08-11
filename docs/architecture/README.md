@@ -42,7 +42,7 @@ Read only the document relevant to the task:
 2. [Cell model](02-cell-model.md)
 3. [Boundaries and guardrails](03-boundaries-and-guardrails.md)
 4. [Agent operations](04-agent-operations.md)
-5. [Bootstrap and reference project](05-bootstrap-and-reference.md)
+5. [Bootstrap workflow](05-bootstrap-workflow.md)
 6. [Architecture feedback log](06-architecture-feedback-log.md)
 
 The repository files and Taskfile are authoritative where they differ from prose.

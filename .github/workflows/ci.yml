@@ -93,12 +93,6 @@ jobs:
         with:
           version: v2.12.2
 
-      - name: Lint reference module
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.12.2
-          working-directory: examples/reference-project
-
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest

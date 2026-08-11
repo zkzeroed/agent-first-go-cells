@@ -15,13 +15,13 @@ task deps ID=user-authenticate    # see dependency graph
 task scope ID=user-authenticate   # print the explicit edit boundary
 ```
 
-For the reference project, root-capable tools accept `ROOT=examples/reference-project`:
+For a nested project, root-capable tools accept `ROOT=<project-path>`:
 
 ```bash
-task cells ROOT=examples/reference-project
-task deps ID=greeting-render ROOT=examples/reference-project
-task find-cell QUERY=greeting ROOT=examples/reference-project
-task impact ROOT=examples/reference-project
+task cells ROOT=path/to/project
+task deps ID=<cell-id> ROOT=path/to/project
+task find-cell QUERY=<topic> ROOT=path/to/project
+task impact ROOT=path/to/project
 ```
 
 `context` is repository-root only.

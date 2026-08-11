@@ -45,7 +45,6 @@ func TestOperationalDocsDescribeCurrentBoundaries(t *testing.T) {
 		"README.md":                                {"api/api.go", "API contract"},
 		"docs/architecture/02-cell-model.md":       {"exact existing", "cell IDs"},
 		"docs/architecture/04-agent-operations.md": {"task --list", "GOLANGCI_LINT_CACHE"},
-		"examples/reference-project/README.md":     {"greeting-compose", "token-issue"},
 	}
 	for path, required := range checks {
 		content, err := os.ReadFile(filepath.Join(root, path))

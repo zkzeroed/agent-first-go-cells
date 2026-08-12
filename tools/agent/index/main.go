@@ -80,6 +80,8 @@ type CellIndex struct {
 
 const maxContextGuideBytes = 6_000
 
+const indexSchemaVersion = "agent-first/v1"
+
 func main() {
 	root, check, jsonOutput, err := parseArgs(os.Args[1:])
 	if err != nil {
@@ -180,7 +182,7 @@ func printJSON(root string) error {
 
 func buildIndex(manifests []manifest.Manifest) CellIndex {
 	index := CellIndex{
-		SchemaVersion: "agent-first/v5",
+		SchemaVersion: indexSchemaVersion,
 		Hash:          "sha256:" + computeHash(manifests),
 		Cells:         []CellRecord{},
 	}
@@ -233,6 +235,9 @@ func checkStale(root string) error {
 		return fmt.Errorf("cannot parse existing index: %w", err)
 	}
 
+	if idx.SchemaVersion != indexSchemaVersion {
+		return fmt.Errorf("schema version mismatch: existing=%s expected=%s", idx.SchemaVersion, indexSchemaVersion)
+	}
 	if idx.Hash != currentHash {
 		return fmt.Errorf("hash mismatch: existing=%s current=%s", idx.Hash, currentHash)
 	}

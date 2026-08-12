@@ -8,7 +8,7 @@ import (
 )
 
 func TestOperationalDocsAvoidRetiredArchitectureTerms(t *testing.T) {
-	retired := []string{"agent-first/v1", ".devin/", ".rules", "interface files", "interface file only"}
+	retired := []string{".devin/", ".rules", "interface files", "interface file only"}
 	root := projectRoot(t)
 	paths := []string{filepath.Join(root, "README.md"), filepath.Join(root, "AGENTS.md")}
 	err := filepath.WalkDir(filepath.Join(root, "docs/architecture"), func(path string, d os.DirEntry, err error) error {

@@ -33,6 +33,25 @@ func TestCheckStaleAllowsMissingContextDirectoryWithoutCells(t *testing.T) {
 	}
 }
 
+func TestCheckStaleRejectsSchemaVersionMismatch(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "gen"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	index := buildIndex(nil)
+	index.SchemaVersion = "agent-first/v0"
+	data, err := json.Marshal(index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "gen", "cells.json"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkStale(root); err == nil || !strings.Contains(err.Error(), "schema version mismatch") {
+		t.Fatalf("checkStale() error = %v, want schema-version mismatch", err)
+	}
+}
+
 func TestContextPackIncludesAgentsSourceAndHashChanges(t *testing.T) {
 	base := manifest.Manifest{ID: "orders-create", Purpose: "create", RawContent: "id: orders-create\n", AgentsContent: "# Guide\n\nUse the service.\n"}
 	changed := base

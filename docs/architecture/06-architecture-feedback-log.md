@@ -51,6 +51,27 @@ Use this format for each entry:
 
 <!-- Add new entries below this line, newest first. -->
 
+### 2026-08-12 — Index freshness must include its schema contract
+
+- **Context:** Orienting a new repository regenerated an otherwise
+  hash-current empty `gen/cells.json` solely because the checked-in schema was
+  `agent-first/v2` while the generator emitted `agent-first/v5`.
+- **What worked:** The manifest hash continued to detect source and guide
+  changes, and regeneration made the schema mismatch immediately visible in
+  the working tree.
+- **Difficulty:** `task check-index` reported the v2 index fresh, so `task
+  orient` was unexpectedly mutating in a clean checkout.
+- **Cause:** Freshness compared only the manifest hash; `schemaVersion` was
+  emitted but not part of the freshness contract.
+- **Fix applied:** Established `agent-first/v1` as the completed baseline and
+  made `check-index` reject a mismatched schema version before checking hash
+  and context packs.
+- **Suggested improvement:** Treat every future incompatible index shape as a
+  deliberate schema-version migration and regenerate all tracked indexes in
+  the same change.
+- **Files/commands:** `tools/agent/index`; `task index`; `task check-index`;
+  `task orient`.
+
 ### 2026-08-12 — Registry-driven public-package boundaries
 
 - **Context:** Audited whether public packages at the module root, `pkg/`, and

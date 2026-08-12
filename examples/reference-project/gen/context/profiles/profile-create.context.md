@@ -5,6 +5,10 @@
 
 **Purpose:** Create validated profiles using the shared repository contract
 
+**Kind:** private cell
+
+**Public:** false
+
 **Entrypoints:**
 
 - `api/api.go`

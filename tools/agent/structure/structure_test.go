@@ -18,12 +18,21 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/projectconfig"
 )
 
 // projectRoot finds the repository root by searching for go.mod.
 func projectRoot() string {
+	if root := os.Getenv("STRUCTURE_ROOT"); root != "" {
+		absolute, err := filepath.Abs(root)
+		if err == nil {
+			return absolute
+		}
+	}
 	dir, _ := os.Getwd()
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
@@ -78,6 +87,100 @@ func TestCellImportsUseAPIPackages(t *testing.T) {
 	if violations > 0 {
 		t.Errorf("Found %d cell API import violation(s)", violations)
 	}
+}
+
+// TestLibraryPackagesDoNotExposePrivateTypes keeps implementation vocabulary
+// out of the supported downstream API.
+func TestLibraryPackagesDoNotExposePrivateTypes(t *testing.T) {
+	root := projectRoot()
+	config, err := projectconfig.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, packageDir := range config.LibraryPackages {
+		checkLibraryPackage(t, root, packageDir, projectconfig.CellsRoot)
+	}
+}
+
+func checkLibraryPackage(t *testing.T, root, packageDir, cellsRoot string) {
+	t.Helper()
+	dir := filepath.Join(root, packageDir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Errorf("read library package %s: %v", packageDir, err)
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".go" || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		path := filepath.Join(dir, entry.Name())
+		file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+		if err != nil {
+			t.Errorf("parse %s: %v", path, err)
+			continue
+		}
+		privateAliases := privateImportAliases(file, cellsRoot)
+		for _, decl := range file.Decls {
+			if declarationLeaksPrivateType(decl, privateAliases) {
+				t.Errorf("%s exposes a private implementation type", path)
+			}
+		}
+	}
+}
+
+func privateImportAliases(file *ast.File, cellsRoot string) map[string]bool {
+	aliases := map[string]bool{}
+	for _, imp := range file.Imports {
+		path := strings.Trim(imp.Path.Value, "\"")
+		if !strings.Contains(path, "/internal/") && !strings.Contains(path, "/"+filepath.ToSlash(cellsRoot)+"/") {
+			continue
+		}
+		name := filepath.Base(path)
+		if imp.Name != nil {
+			name = imp.Name.Name
+		}
+		aliases[name] = true
+	}
+	return aliases
+}
+
+func declarationLeaksPrivateType(decl ast.Decl, aliases map[string]bool) bool {
+	switch decl := decl.(type) {
+	case *ast.FuncDecl:
+		return decl.Name.IsExported() && expressionUsesPrivateAlias(decl.Type, aliases)
+	case *ast.GenDecl:
+		return slices.ContainsFunc(decl.Specs, func(spec ast.Spec) bool {
+			return exportedSpecUsesPrivateAlias(spec, aliases)
+		})
+	default:
+		return false
+	}
+}
+
+func exportedSpecUsesPrivateAlias(spec ast.Spec, aliases map[string]bool) bool {
+	switch spec := spec.(type) {
+	case *ast.TypeSpec:
+		return spec.Name.IsExported() && expressionUsesPrivateAlias(spec.Type, aliases)
+	case *ast.ValueSpec:
+		return slices.ContainsFunc(spec.Names, func(name *ast.Ident) bool { return name.IsExported() }) && expressionUsesPrivateAlias(spec.Type, aliases)
+	default:
+		return false
+	}
+}
+
+func expressionUsesPrivateAlias(expression ast.Expr, aliases map[string]bool) bool {
+	found := false
+	ast.Inspect(expression, func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		identifier, ok := selector.X.(*ast.Ident)
+		found = found || (ok && aliases[identifier.Name])
+		return !found
+	})
+	return found
 }
 
 // TestNoInitFunctions verifies that no init() functions exist anywhere.

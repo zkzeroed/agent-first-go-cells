@@ -5,6 +5,10 @@ description: Build a new cell in the Agent-First Go architecture. Use when creat
 
 # Build a Cell (Inside-Out)
 
+This skill builds private application cells. For a downstream-importable Go
+package, use the `new-package` skill instead; a library package owns its stable
+API and may compose declared private cells.
+
 ## Build Order
 
 Cells are built **inside-out** — from domain vocabulary to transport layer. This mirrors hexagonal architecture's "domain outwards to adapters" but with cell-specific ordering.
@@ -149,9 +153,14 @@ invariants:
 
 Document the cell for the next agent. Use the template from `task new-cell`.
 
-### Step 10: Wiring (`internal/app/wiring.go`)
+### Step 10: Application wiring (`internal/app/wiring.go`)
 
-Connect the cell to the application. This is the ONLY place cells are constructed.
+For an executable application, connect the cell to the application here. This
+is the ONLY place private application cells are constructed. `cmd/<name>/main.go`
+then owns process lifecycle and invokes the assembled application boundary.
+For library mode, the configured public package is the composition boundary;
+do not add `cmd/` or application wiring solely to construct its private helper
+cells.
 
 ```go
 // in wiring.go
@@ -175,5 +184,15 @@ task doctor         # architecture health check
 - **Store is always an interface.** This enables testing without a database.
 - **Service is stateless** except for `deps` (read-only after construction).
 - **Handler is thin.** No business logic in handlers.
-- **Wiring is centralized.** Never construct cells outside `wiring.go`.
+- **Composition is explicit.** Applications construct cells only in
+  `internal/app/wiring*.go`; libraries construct declared helpers only in their
+  registered public package.
 - **Files ≤ 300 LOC, functions ≤ 40 LOC.** Enforced by structural tests.
+
+## Scaffolding Profiles
+
+`task new-cell ID=<id>` creates the lean default: manifest, guide, package
+documentation, API contract, implementation file, and test. Start there for a
+private helper or focused capability. Use `task new-cell-ext ID=<id>` only when
+the cell needs the extended application template with types, errors, service,
+store, and handler files.

@@ -3,24 +3,33 @@
 #
 # Usage: task new-cell ID=user-authenticate
 #
-# Creates a complete cell directory with all required files following the
-# Agent-First Go architecture file schema. Each file contains TODO markers
-# for the agent or developer to fill in.
+# Creates the lean cell directory required by the Agent-First Go architecture.
+# Pass --extended to add application-oriented types, errors, service, store,
+# and handler files. Each file contains TODO markers for the next developer.
 #
 # WHEN TO USE: When creating a new capability that has one primary behavior.
 # For capabilities with multiple distinct behaviors sharing types, use
 # `task scaffold-domain` instead.
 #
-# WHY IT HELPS AGENTS: An agent can scaffold a new cell with a single command,
-# getting the correct file schema automatically. The TODO markers guide the
-# agent on what to implement, reducing the chance of missing required files.
+# WHY IT HELPS AGENTS: An agent can start with the smallest correct ownership
+# boundary, then opt into the broader application template when needed.
 set -euo pipefail
 
-id="${1:?usage: new-cell.sh <cell-id>}"
+root="."
+extended=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --extended) extended=true; shift ;;
+    --root) root="${2:?usage: new-cell.sh [--extended] --root <project-root> <cell-id>}"; shift 2 ;;
+    *) break ;;
+  esac
+done
+id="${1:?usage: new-cell.sh [--root <project-root>] <cell-id>}"
 if ! [[ "${id}" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*(/[a-z][a-z0-9]*(-[a-z0-9]+)*)?$ ]]; then
   echo "invalid cell ID: ${id} (use kebab-case, optionally domain/action)" >&2
   exit 1
 fi
+cd "$root"
 path="internal/cells/${id}"
 name=$(basename "${id}" | tr -d '-')
 if [[ -e "${path}" ]]; then
@@ -64,6 +73,19 @@ package ${name}
 // TODO: Implement the cell. Keep public contracts in api/api.go.
 EOF
 
+cat > "${path}/${name}_test.go" <<EOF
+package ${name}
+
+import "testing"
+
+func TestTODO(t *testing.T) {
+    // TODO: Add table-driven tests.
+}
+EOF
+
+if [[ "$extended" == true ]]; then
+rm "${path}/${name}_test.go"
+
 cat > "${path}/types.go" <<EOF
 package ${name}
 
@@ -103,9 +125,10 @@ package ${name}
 import "testing"
 
 func TestTODO(t *testing.T) {
-    // TODO: Add table-driven tests.
+	// TODO: Add table-driven tests.
 }
 EOF
+fi
 
 cat > "${path}/AGENTS.md" <<EOF
 # Cell: ${id}
@@ -118,8 +141,8 @@ TODO: Describe what this cell does.
 
 1. \`cell.yaml\` — metadata, dependencies, invariants
 2. \`api/api.go\` — public interface and shared contract types
-3. \`service.go\` — business logic
-4. \`service_test.go\` — expected behavior
+3. \`${name}.go\` — implementation
+4. \`${name}_test.go\` — expected behavior
 
 ## Invariants
 
@@ -127,13 +150,12 @@ TODO: Describe what this cell does.
 
 ## Common Tasks
 
-### Add a new endpoint
+### Extend this cell
 1. Add method to the public interface in \`api/api.go\`
-2. Implement in \`service.go\`
-3. Add handler case in \`handler.go\`
-4. Add table-driven test
-5. Update \`cell.yaml\` if interface changed
-6. Run \`go test ./internal/cells/${id}/...\`
+2. Implement in \`${name}.go\`
+3. Add a table-driven test
+4. Update \`cell.yaml\` if the interface changed
+5. Run \`go test ./internal/cells/${id}/...\`
 
 ## Reliability & Concurrency
 
@@ -145,5 +167,5 @@ TODO: Describe what this cell does.
 - \`golangci-lint run ./internal/cells/${id}/...\`
 EOF
 
-echo "Created cell ${id} at ${path}"
+echo "Created $(if [[ "$extended" == true ]]; then echo "extended "; fi)cell ${id} at ${path}"
 echo "Next: fill in the TODOs, wire in internal/app/wiring.go, run 'task index && task test'"

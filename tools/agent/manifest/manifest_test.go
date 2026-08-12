@@ -47,6 +47,30 @@ func TestParsePreservesNestedEntrypointAndValidation(t *testing.T) {
 	}
 }
 
+func TestParseValidatesLibraryConformance(t *testing.T) {
+	valid := "id: field\nkind: library-package\npublic: true\npurpose: public field\nentrypoints:\n  - file: field.go\n    symbol: Service\ndependencies: []\nvalidation:\n  - go test ./field/...\nconformance:\n  basis: paper-defined-math\n  status: simplified\n  evidence: unverified\n  citations:\n    - file: docs/paper.pdf\n      locator:\n        type: pdf-pages\n        pages: [4, 5]\n      symbols: [Service]\n  gaps:\n    - missing optimized implementation\n"
+	manifest, err := Parse(valid)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if manifest.Conformance.Basis != "paper-defined-math" || len(manifest.Conformance.Citations) != 1 {
+		t.Fatalf("Conformance = %#v, want parsed paper record", manifest.Conformance)
+	}
+
+	missingCitation := strings.Replace(valid, "      symbols: [Service]\n", "", 1)
+	if _, err := Parse(missingCitation); err == nil || !strings.Contains(err.Error(), "citations require") {
+		t.Fatalf("Parse() error = %v, want citation validation error", err)
+	}
+	missingRationale := strings.Replace(valid, "basis: paper-defined-math", "basis: engineering-primitive", 1)
+	if _, err := Parse(missingRationale); err == nil || !strings.Contains(err.Error(), "rationale") {
+		t.Fatalf("Parse() error = %v, want rationale validation error", err)
+	}
+	withoutConformance := strings.Split(valid, "conformance:")[0]
+	if _, err := Parse(withoutConformance); err == nil || !strings.Contains(err.Error(), "conformance basis") {
+		t.Fatalf("Parse() error = %v, want required conformance error", err)
+	}
+}
+
 func TestValidateSourceAtRejectsInvalidEntrypointsAndDependencies(t *testing.T) {
 	root := t.TempDir()
 	writeManifestFixture(t, root, "orders-create", nil, "package orderscreate\n\ntype Creator struct{}\n")
@@ -78,6 +102,77 @@ func TestValidateSourceAtRejectsInvalidEntrypointsAndDependencies(t *testing.T) 
 	}
 	if err := ValidateSourceAt(root, manifests); err != nil {
 		t.Fatalf("ValidateSourceAt() error = %v, want nil", err)
+	}
+}
+
+func TestFindAllAtDiscoversRegisteredLibraryPackageAndPrivateDependency(t *testing.T) {
+	root := t.TempDir()
+	writeManifestFixture(t, root, "helper", nil, "package helper\n\ntype Creator struct{}\n")
+	if err := os.MkdirAll(filepath.Join(root, "field"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "policy"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "policy", "architecture.yaml"), []byte("libraryPackages:\n  field: field\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "field", "cell.yaml"), []byte("id: field\nkind: library-package\npublic: true\npurpose: public field\nentrypoints:\n  - file: field.go\n    symbol: Service\ndependencies:\n  - helper\nvalidation:\n  - go test ./field/...\nconformance:\n  basis: engineering-primitive\n  status: conformant\n  evidence: verified\n  rationale: test package\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "field", "AGENTS.md"), []byte("# field\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "field", "field.go"), []byte("package field\n\nimport _ \"example.com/test/internal/cells/helper\"\n\ntype Service struct{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manifests, err := FindAllAt(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifests) != 2 || manifests[0].ID != "field" || manifests[0].Dir != "field" {
+		t.Fatalf("FindAllAt() = %#v, want registered library package", manifests)
+	}
+	if err := ValidateSourceAt(root, manifests); err != nil {
+		t.Fatalf("ValidateSourceAt() error = %v", err)
+	}
+}
+
+func TestValidateSourceAtVerifiesConformanceEvidence(t *testing.T) {
+	root := t.TempDir()
+	for _, directory := range []string{"field", "docs", "policy"} {
+		if err := os.MkdirAll(filepath.Join(root, directory), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module example.com/test\n\ngo 1.26.5\n")
+	write("policy/architecture.yaml", "libraryPackages:\n  field: field\n")
+	write("field/AGENTS.md", "# Guide\n")
+	write("field/field.go", "package field\n\nfunc Reduce(value int) int { return value }\n")
+	write("docs/reduction.md", "# Euclidean remainder\n")
+	write("field/cell.yaml", "id: field\nkind: library-package\npublic: true\npurpose: public field\nentrypoints:\n  - file: field.go\n    symbol: Reduce\ndependencies: []\nvalidation:\n  - go test ./field/...\nconformance:\n  basis: paper-defined-math\n  status: conformant\n  evidence: verified\n  citations:\n    - file: docs/reduction.md\n      locator:\n        type: markdown-heading\n        heading: Euclidean remainder\n      symbols: [Reduce]\n")
+
+	manifests, err := FindAllAt(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateSourceAt(root, manifests); err != nil {
+		t.Fatalf("ValidateSourceAt() error = %v, want nil", err)
+	}
+	write("docs/reduction.md", "# Different heading\n")
+	if err := ValidateSourceAt(root, manifests); err == nil || !strings.Contains(err.Error(), "heading") {
+		t.Fatalf("ValidateSourceAt() error = %v, want missing heading error", err)
+	}
+	manifests[0].Conformance.Citations[0].Symbols = []string{"Missing"}
+	write("docs/reduction.md", "# Euclidean remainder\n")
+	if err := ValidateSourceAt(root, manifests); err == nil || !strings.Contains(err.Error(), "not exported") {
+		t.Fatalf("ValidateSourceAt() error = %v, want missing symbol error", err)
 	}
 }
 

@@ -1,11 +1,12 @@
 {
-  "schemaVersion": "agent-first/v2",
+  "schemaVersion": "agent-first/v5",
   "hash": "sha256:6823234e99a4861f2659170f20e7ae7eebff7ed2f335419b55f24579c592a087",
   "cells": [
     {
       "id": "greeting-compose",
       "path": "internal/cells/greeting-compose",
       "package": "greetingcompose",
+      "public": false,
       "purpose": "Compose a greeting from a validated name",
       "entrypoints": [
         "api/api.go"
@@ -19,6 +20,7 @@
       "id": "greeting-render",
       "path": "internal/cells/greeting-render",
       "package": "greetingrender",
+      "public": false,
       "purpose": "Render greetings over HTTP",
       "entrypoints": [
         "api/api.go"
@@ -34,6 +36,7 @@
       "id": "profiles",
       "path": "internal/cells/profiles",
       "package": "profiles",
+      "public": false,
       "purpose": "Own shared profile vocabulary and repository contracts",
       "entrypoints": [
         "api/api.go"
@@ -47,6 +50,7 @@
       "id": "profiles/profile-create",
       "path": "internal/cells/profiles/profile-create",
       "package": "profiles/profilecreate",
+      "public": false,
       "purpose": "Create validated profiles using the shared repository contract",
       "entrypoints": [
         "api/api.go"
@@ -62,6 +66,7 @@
       "id": "token-issue",
       "path": "internal/cells/token-issue",
       "package": "tokenissue",
+      "public": false,
       "purpose": "Issue random opaque tokens and retain only their SHA-256 digests",
       "entrypoints": [
         "api/api.go"
@@ -75,6 +80,7 @@
       "id": "token-render",
       "path": "internal/cells/token-render",
       "package": "tokenrender",
+      "public": false,
       "purpose": "Render newly issued opaque tokens over HTTP",
       "entrypoints": [
         "api/api.go"

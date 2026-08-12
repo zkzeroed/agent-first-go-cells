@@ -19,14 +19,38 @@ import (
 )
 
 type CellRecord struct {
-	ID           string   `json:"id"`
-	Path         string   `json:"path"`
-	Package      string   `json:"package"`
-	Purpose      string   `json:"purpose"`
-	Entrypoints  []string `json:"entrypoints"`
-	Dependencies []string `json:"dependencies"`
-	Validation   []string `json:"validation"`
-	Status       string   `json:"status"`
+	ID           string             `json:"id"`
+	Path         string             `json:"path"`
+	Package      string             `json:"package"`
+	Kind         string             `json:"kind,omitempty"`
+	Public       bool               `json:"public"`
+	Purpose      string             `json:"purpose"`
+	Entrypoints  []string           `json:"entrypoints"`
+	Dependencies []string           `json:"dependencies"`
+	Validation   []string           `json:"validation"`
+	Conformance  *ConformanceRecord `json:"conformance,omitempty"`
+	Status       string             `json:"status"`
+}
+
+type ConformanceRecord struct {
+	Basis     string           `json:"basis"`
+	Status    string           `json:"status"`
+	Evidence  string           `json:"evidence"`
+	Citations []CitationRecord `json:"citations,omitempty"`
+	Rationale string           `json:"rationale,omitempty"`
+	Gaps      []string         `json:"gaps,omitempty"`
+}
+
+type CitationRecord struct {
+	File    string        `json:"file"`
+	Locator LocatorRecord `json:"locator"`
+	Symbols []string      `json:"symbols"`
+}
+
+type LocatorRecord struct {
+	Type    string `json:"type"`
+	Pages   []uint `json:"pages,omitempty"`
+	Heading string `json:"heading,omitempty"`
 }
 
 type CellIndex struct {
@@ -85,12 +109,19 @@ func printTable(idx CellIndex) {
 		return
 	}
 
-	fmt.Printf("%-25s %-45s %-45s %s\n", "ID", "PATH", "PURPOSE", "STATUS")
-	fmt.Println(strings.Repeat("-", 140))
+	fmt.Printf("%-25s %-45s %-18s %-8s %-32s %s\n", "ID", "PATH", "KIND", "PUBLIC", "PURPOSE", "STATUS")
+	fmt.Println(strings.Repeat("-", 160))
 	for _, c := range idx.Cells {
-		fmt.Printf("%-25s %-45s %-45s %s\n", c.ID, c.Path, truncate(c.Purpose), "✓")
+		fmt.Printf("%-25s %-45s %-18s %-8t %-32s %s\n", c.ID, c.Path, displayKind(c.Kind), c.Public, truncate(c.Purpose), "✓")
 	}
 	fmt.Printf("\nTotal: %d cells (index hash: %s)\n", len(idx.Cells), idx.Hash)
+}
+
+func displayKind(kind string) string {
+	if kind == "" {
+		return "private cell"
+	}
+	return kind
 }
 
 func truncate(value string) string {

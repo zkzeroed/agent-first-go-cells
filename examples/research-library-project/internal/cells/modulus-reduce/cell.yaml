@@ -1,0 +1,10 @@
+id: modulus-reduce
+purpose: "Compute canonical integer residues for the public modulus package"
+entrypoints:
+  - file: api/api.go
+    symbol: Reducer
+dependencies: []
+validation:
+  - go test ./internal/cells/modulus-reduce/...
+invariants:
+  - "For a positive modulus, results are in the range zero through modulus minus one"

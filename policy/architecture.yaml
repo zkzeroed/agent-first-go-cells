@@ -1,0 +1,3 @@
+# Project-wide architecture boundaries. Library packages are registered here so
+# agent tooling can treat exportable Go packages as owned cells.
+libraryPackages: {}

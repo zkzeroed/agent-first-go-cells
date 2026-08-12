@@ -1,0 +1,8 @@
+id: text-fold
+purpose: "Fold whitespace and lowercase labels for module-root package composition"
+entrypoints:
+  - file: api/api.go
+    symbol: Folder
+dependencies: []
+validation:
+  - go test ./internal/cells/text-fold/...

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "agent-first/v5",
+  "hash": "sha256:6fee0c273056485af75f792690253a6d8132b9c99f0082ef03b86c396f05bc32",
+  "cells": [
+    {
+      "id": "modulus",
+      "path": "modulus",
+      "package": "modulus",
+      "kind": "library-package",
+      "public": true,
+      "purpose": "Reduce signed integers modulo the fixed prime 97",
+      "entrypoints": [
+        "api.go"
+      ],
+      "dependencies": [
+        "modulus-reduce"
+      ],
+      "validation": [
+        "go test ./modulus/..."
+      ],
+      "conformance": {
+        "basis": "paper-defined-math",
+        "status": "conformant",
+        "evidence": "verified",
+        "citations": [
+          {
+            "file": "docs/research/modular-reduction.md",
+            "locator": {
+              "type": "markdown-heading",
+              "heading": "Euclidean remainder"
+            },
+            "symbols": [
+              "Reduce"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "modulus-reduce",
+      "path": "internal/cells/modulus-reduce",
+      "package": "modulusreduce",
+      "public": false,
+      "purpose": "Compute canonical integer residues for the public modulus package",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [],
+      "validation": [
+        "go test ./internal/cells/modulus-reduce/..."
+      ]
+    }
+  ]
+}

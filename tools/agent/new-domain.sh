@@ -16,11 +16,17 @@
 # added individually, maintaining the same fixed schema at the leaf level.
 set -euo pipefail
 
-id="${1:?usage: new-domain.sh <domain-id>}"
+root="."
+if [[ "${1:-}" == "--root" ]]; then
+  root="${2:?usage: new-domain.sh --root <project-root> <domain-id>}"
+  shift 2
+fi
+id="${1:?usage: new-domain.sh [--root <project-root>] <domain-id>}"
 if ! [[ "${id}" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]]; then
   echo "invalid domain ID: ${id} (use kebab-case)" >&2
   exit 1
 fi
+cd "$root"
 path="internal/cells/${id}"
 name=$(basename "${id}" | tr -d '-')
 if [[ -e "${path}" ]]; then

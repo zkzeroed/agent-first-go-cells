@@ -16,6 +16,8 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"go/parser"
 	"go/token"
@@ -24,6 +26,8 @@ import (
 	pathpkg "path"
 	"path/filepath"
 	"strings"
+
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/projectconfig"
 )
 
 type Rule struct {
@@ -32,34 +36,46 @@ type Rule struct {
 	Deny  []string
 }
 
+//nolint:cyclop // This is the command's linear validation workflow; helpers would only obscure its stages.
 func main() {
-	rules, err := parsePolicy("policy/imports.yaml")
+	root := flag.String("root", ".", "project root")
+	flag.Parse()
+	rules, err := parsePolicy(filepath.Join(*root, "policy", "imports.yaml"))
+	if errors.Is(err, os.ErrNotExist) {
+		rules = nil
+		err = nil
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing policy: %v\n", err)
 		os.Exit(1)
 	}
 
-	if len(rules) == 0 {
-		fmt.Println("No import policy rules found. Skipping.")
-		return
-	}
-
-	modulePath, err := readModulePath("go.mod")
+	modulePath, err := readModulePath(filepath.Join(*root, "go.mod"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading module path: %v\n", err)
 		os.Exit(1)
 	}
+	config, err := projectconfig.Load(*root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading architecture config: %v\n", err)
+		os.Exit(1)
+	}
 	violations := 0
 
-	if err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(*root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}
+		relPath, err := filepath.Rel(*root, path)
+		if err != nil {
+			return err
+		}
+		relPath = filepath.ToSlash(relPath)
 
-		if strings.HasPrefix(path, "vendor/") || strings.HasPrefix(path, "tools/agent/") {
+		if strings.HasPrefix(relPath, "vendor/") || strings.HasPrefix(relPath, "tools/agent/") {
 			return nil
 		}
 
@@ -71,10 +87,15 @@ func main() {
 
 		for _, imp := range file.Imports {
 			importPath := strings.Trim(imp.Path.Value, "\"")
+			normalized := normalizeImport(importPath, modulePath)
+			if violation := validateCellBoundary(relPath, normalized, config); violation != "" {
+				fmt.Printf("VIOLATION: %s imports %s (%s)\n", relPath, importPath, violation)
+				violations++
+			}
 			for _, rule := range rules {
-				if matchGlob(rule.From, path) {
-					if violation := validateImport(rule, normalizeImport(importPath, modulePath)); violation != "" {
-						fmt.Printf("VIOLATION: %s imports %s (%s)\n", path, importPath, violation)
+				if matchGlob(rule.From, relPath) {
+					if violation := validateImport(rule, normalized); violation != "" {
+						fmt.Printf("VIOLATION: %s imports %s (%s)\n", relPath, importPath, violation)
 						violations++
 					}
 				}
@@ -91,7 +112,53 @@ func main() {
 		os.Exit(1)
 	}
 
+	if len(rules) == 0 {
+		fmt.Println("✓ Built-in cell and library import boundaries clean (no custom policy).")
+		return
+	}
 	fmt.Println("✓ Import policy clean.")
+}
+
+func validateCellBoundary(source, importPath string, config projectconfig.Config) string {
+	// Tests may construct implementations to exercise a unit in isolation.
+	// Production source remains subject to the explicit package boundaries below.
+	if strings.HasSuffix(source, "_test.go") {
+		return ""
+	}
+	cellsPrefix := projectconfig.CellsRoot + "/"
+	if strings.HasPrefix(source, cellsPrefix) {
+		if !strings.HasPrefix(importPath, cellsPrefix) {
+			return ""
+		}
+		if strings.HasSuffix(importPath, "/api") {
+			return ""
+		}
+		return "cell dependencies must use an api package"
+	}
+	if isWiringFile(source) && strings.HasPrefix(importPath, cellsPrefix) {
+		return ""
+	}
+	for _, packageDir := range config.LibraryPackages {
+		if projectconfig.IsPackageFile(source, packageDir) {
+			if !strings.HasPrefix(importPath, "internal/") {
+				return ""
+			}
+			if strings.HasPrefix(importPath, cellsPrefix) {
+				return ""
+			}
+			return "library packages may import only declared private cell implementations"
+		}
+	}
+	if !strings.HasPrefix(importPath, cellsPrefix) {
+		return ""
+	}
+	return "only configured library packages may import private cell implementations"
+}
+
+func isWiringFile(path string) bool {
+	return filepath.Dir(path) == "internal/app" &&
+		strings.HasPrefix(filepath.Base(path), "wiring") &&
+		strings.HasSuffix(path, ".go")
 }
 
 func parsePolicy(path string) ([]Rule, error) {

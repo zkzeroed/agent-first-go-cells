@@ -1,0 +1,20 @@
+id: greeting
+kind: library-package
+public: true
+purpose: "Expose stable greeting messages to downstream Go consumers"
+entrypoints:
+  - file: greeting.go
+    symbol: New
+dependencies:
+  - greeting-render
+  - text-normalize
+validation:
+  - go test ./greeting/...
+invariants:
+  - "Exported API never exposes private cell types"
+  - "Whitespace-only names are rejected"
+conformance:
+  basis: engineering-primitive
+  status: conformant
+  evidence: verified
+  rationale: "This example demonstrates a stable exported package composed from private cells; it does not implement a paper-defined protocol."

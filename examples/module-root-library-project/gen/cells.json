@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "agent-first/v5",
+  "hash": "sha256:648e9061c58930f5ecb34defcd726eae09ce02809ce1df5cddb50ba7b8f3c76d",
+  "cells": [
+    {
+      "id": "canonical",
+      "path": ".",
+      "package": "canonical",
+      "kind": "library-package",
+      "public": true,
+      "purpose": "Canonicalize short user-facing labels for downstream consumers",
+      "entrypoints": [
+        "api.go"
+      ],
+      "dependencies": [
+        "text-fold"
+      ],
+      "validation": [
+        "go test ./..."
+      ],
+      "conformance": {
+        "basis": "engineering-primitive",
+        "status": "conformant",
+        "evidence": "verified",
+        "rationale": "The package demonstrates a stable module-root API backed by a private normalization helper; its text-folding behavior is intentional library policy."
+      }
+    },
+    {
+      "id": "text-fold",
+      "path": "internal/cells/text-fold",
+      "package": "textfold",
+      "public": false,
+      "purpose": "Fold whitespace and lowercase labels for module-root package composition",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [],
+      "validation": [
+        "go test ./internal/cells/text-fold/..."
+      ]
+    }
+  ]
+}

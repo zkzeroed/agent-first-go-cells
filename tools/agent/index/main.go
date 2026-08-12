@@ -37,13 +37,39 @@ import (
 )
 
 type CellRecord struct {
-	ID           string   `json:"id"`
-	Path         string   `json:"path"`
-	Package      string   `json:"package"`
-	Purpose      string   `json:"purpose"`
-	Entrypoints  []string `json:"entrypoints"`
-	Dependencies []string `json:"dependencies"`
-	Validation   []string `json:"validation"`
+	ID           string             `json:"id"`
+	Path         string             `json:"path"`
+	Package      string             `json:"package"`
+	Kind         string             `json:"kind,omitempty"`
+	Public       bool               `json:"public"`
+	Purpose      string             `json:"purpose"`
+	Entrypoints  []string           `json:"entrypoints"`
+	Dependencies []string           `json:"dependencies"`
+	Validation   []string           `json:"validation"`
+	Conformance  *ConformanceRecord `json:"conformance,omitempty"`
+}
+
+// ConformanceRecord makes a public package's research provenance and known
+// limitations available without reparsing its source manifest.
+type ConformanceRecord struct {
+	Basis     string           `json:"basis"`
+	Status    string           `json:"status"`
+	Evidence  string           `json:"evidence"`
+	Citations []CitationRecord `json:"citations,omitempty"`
+	Rationale string           `json:"rationale,omitempty"`
+	Gaps      []string         `json:"gaps,omitempty"`
+}
+
+type CitationRecord struct {
+	File    string        `json:"file"`
+	Locator LocatorRecord `json:"locator"`
+	Symbols []string      `json:"symbols"`
+}
+
+type LocatorRecord struct {
+	Type    string `json:"type"`
+	Pages   []uint `json:"pages,omitempty"`
+	Heading string `json:"heading,omitempty"`
 }
 
 type CellIndex struct {
@@ -154,7 +180,7 @@ func printJSON(root string) error {
 
 func buildIndex(manifests []manifest.Manifest) CellIndex {
 	index := CellIndex{
-		SchemaVersion: "agent-first/v2",
+		SchemaVersion: "agent-first/v5",
 		Hash:          "sha256:" + computeHash(manifests),
 		Cells:         []CellRecord{},
 	}
@@ -163,13 +189,27 @@ func buildIndex(manifests []manifest.Manifest) CellIndex {
 			ID:           m.ID,
 			Path:         m.Dir,
 			Package:      strings.ReplaceAll(m.ID, "-", ""),
+			Kind:         m.Kind,
+			Public:       m.Public,
 			Purpose:      m.Purpose,
 			Entrypoints:  m.Entrypoints,
 			Dependencies: m.Dependencies,
 			Validation:   m.Validation,
+			Conformance:  conformanceRecord(m.Conformance),
 		})
 	}
 	return index
+}
+
+func conformanceRecord(value manifest.Conformance) *ConformanceRecord {
+	if value.Basis == "" {
+		return nil
+	}
+	record := &ConformanceRecord{Basis: value.Basis, Status: value.Status, Evidence: value.Evidence, Rationale: value.Rationale, Gaps: slices.Clone(value.Gaps)}
+	for _, citation := range value.Citations {
+		record.Citations = append(record.Citations, CitationRecord{File: citation.File, Locator: LocatorRecord{Type: citation.Locator.Type, Pages: slices.Clone(citation.Locator.Pages), Heading: citation.Locator.Heading}, Symbols: slices.Clone(citation.Symbols)})
+	}
+	return record
 }
 
 func checkStale(root string) error {
@@ -256,6 +296,9 @@ func buildContextPack(m manifest.Manifest) string {
 	sb.WriteString("<!-- generated-from: cell.yaml, AGENTS.md -->\n\n")
 	sb.WriteString(fmt.Sprintf("# %s\n\n", m.ID))
 	sb.WriteString(fmt.Sprintf("**Purpose:** %s\n\n", m.Purpose))
+	sb.WriteString(fmt.Sprintf("**Kind:** %s\n\n", displayKind(m.Kind)))
+	sb.WriteString(fmt.Sprintf("**Public:** %t\n\n", m.Public))
+	writeConformance(&sb, m.Conformance)
 
 	if len(m.Entrypoints) > 0 {
 		sb.WriteString("**Entrypoints:**\n\n")
@@ -297,6 +340,42 @@ func buildContextPack(m manifest.Manifest) string {
 	}
 
 	return sb.String()
+}
+
+func writeConformance(sb *strings.Builder, value manifest.Conformance) {
+	if value.Basis == "" {
+		return
+	}
+	sb.WriteString("**Conformance:**\n\n")
+	sb.WriteString(fmt.Sprintf("- Basis: %s\n- Status: %s\n- Evidence: %s\n", value.Basis, value.Status, value.Evidence))
+	if value.Rationale != "" {
+		sb.WriteString(fmt.Sprintf("- Rationale: %s\n", value.Rationale))
+	}
+	for _, gap := range value.Gaps {
+		sb.WriteString(fmt.Sprintf("- Gap: %s\n", gap))
+	}
+	for _, citation := range value.Citations {
+		sb.WriteString(fmt.Sprintf("- Citation: `%s`, %s; symbols: %s\n", citation.File, displayLocator(citation.Locator), strings.Join(citation.Symbols, ", ")))
+	}
+	sb.WriteString("\n")
+}
+
+func displayLocator(locator manifest.CitationLocator) string {
+	if locator.Type == "markdown-heading" {
+		return "heading " + fmt.Sprintf("%q", locator.Heading)
+	}
+	parts := make([]string, len(locator.Pages))
+	for index, page := range locator.Pages {
+		parts[index] = fmt.Sprintf("%d", page)
+	}
+	return "PDF pages " + strings.Join(parts, ", ")
+}
+
+func displayKind(kind string) string {
+	if kind == "" {
+		return "private cell"
+	}
+	return kind
 }
 
 func boundedGuide(guide string) string {

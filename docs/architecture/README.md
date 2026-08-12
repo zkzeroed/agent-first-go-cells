@@ -18,12 +18,16 @@ task ready
 
 ## Core model
 
-- A **cell** is one vertical capability in `internal/cells/<id>`.
+- A private **cell** is one vertical capability in `internal/cells/<id>`.
 - Its public contract is `internal/cells/<id>/api`; other cells import only that package.
+- A `library-package` cell is an exportable Go package registered in
+  `policy/architecture.yaml`; it owns the stable downstream API and may compose
+  declared private cells.
 - The cell root contains implementation, tests, `cell.yaml`, and `AGENTS.md`.
 - `cell.yaml` supplies the machine-readable graph; dependencies use exact cell IDs.
 - `gen/cells.json` and bounded `gen/context/` packs accelerate orientation.
-- `internal/app/wiring.go` is the explicit composition root.
+- `internal/app/wiring.go` is the application composition root; a configured
+  library package is the composition root for its private helpers.
 
 ## Invariants
 

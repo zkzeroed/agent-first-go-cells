@@ -1,0 +1,6 @@
+rules:
+  - from: internal/cells/**
+    allow:
+      - internal/cells/**/api
+    deny:
+      - internal/app/**

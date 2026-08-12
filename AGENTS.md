@@ -22,28 +22,43 @@ task scope ID=<cell-id>
 ```
 
 Use the project-local skill that matches the task: `navigate-cells` for
-orientation, `build-cell` for new capabilities, `modify-cell` for existing
-cells, and `use-modern-go` whenever editing Go.
+orientation, `build-cell` for private application capabilities, `new-package`
+for exported library packages, `modify-cell` for existing cells, and
+`use-modern-go` whenever editing Go.
 
 ## Build Convention
 
-Build each cell inside-out: domain types and errors, its `api` contract,
-implementation and constructor, store, service, handler, tests, manifest, local
-guide, then explicit wiring.
+Build each application cell inside-out: domain types and errors, its `api`
+contract, implementation and constructor, store, service, handler, tests,
+manifest, local guide, then application wiring. In a library, the registered
+public package composes declared private helpers; do not add `cmd/` or
+`internal/app/wiring.go` solely for the library.
 
-Use `task new-cell ID=<behavior-name>` for a single capability. Use
+Use `task new-cell ID=<behavior-name>` for a lean private capability. Use
+`task new-cell-ext ID=<behavior-name>` when it needs the application-oriented
+service, store, and handler template. Use
 `task scaffold-domain ID=<domain>` before adding related sub-actions such as
-`<domain>/<action>`. Generated `gen/` indexes and context packs are derived
-artifacts: regenerate them with `task index`; never edit them directly.
+`<domain>/<action>`. Use `task new-package ID=<id> PATH=<path>` for an
+exported package cell; `PATH=.` requires `PACKAGE=<go-package-name>`.
+Generated `gen/` indexes and context packs are derived artifacts: regenerate
+them with `task index`; never edit them directly.
 
 ## Invariants
 
 - Name cells by behavior in kebab-case; each cell owns `cell.yaml`, `doc.go`,
   `AGENTS.md`, and `api/api.go`.
+- Every public `library-package` declares conformance: research basis and
+  citations, or engineering rationale, plus explicit gaps when incomplete.
+- A public library package may directly import only its declared private-cell
+  implementations; it must not import `internal/app`, `internal/platform`, or
+  `internal/contracts`.
 - Cross-cell imports target only another cell's `api` package. Declare every
   direct dependency by exact cell ID in `cell.yaml`.
-- Construct dependencies only in `internal/app/wiring.go`; do not use `init()`,
-  reflection DI, or service locators.
+- In applications, `cmd/<name>/main.go` owns lifecycle and private application
+  dependencies are constructed only in `internal/app/wiring*.go`. A configured
+  public library package instead composes its declared private cells directly;
+  it needs no `cmd/` or application wiring. Do not use `init()`, reflection DI,
+  or service locators.
 - Keep non-test cell files within 300 lines and functions within 40 lines unless
   the function documents `AGENT_OVERRIDE`.
 
@@ -56,6 +71,14 @@ task new-cell ID=user-authenticate
 # Implement inside-out, wire it, then:
 task index
 task test-cell ID=user-authenticate
+```
+
+Create an exported package:
+
+```bash
+task new-package ID=field PATH=field
+task index
+task test-cell ID=field
 ```
 
 Modify a cell:
@@ -76,6 +99,7 @@ The reference project exercises the architecture without adding starter cells:
 ```bash
 task cells ROOT=examples/reference-project
 task ready ROOT=examples/reference-project
+task ready ROOT=examples/library-project
 ```
 
 ## Reliability & Concurrency
@@ -111,7 +135,10 @@ Install them with `task install-hooks`.
 ## Do Not
 
 - Do not import `internal/app` from a cell or another cell's implementation.
-- Do not add `init()` functions or construct dependencies outside wiring.
+- Do not expose `internal` or private-cell types from an exported package.
+- Do not add `init()` functions. Construct application dependencies only in
+  `internal/app/wiring*.go`; construct library helpers only in their registered
+  public package.
 - Do not manually edit generated indexes or context packs.
 - Do not expand a cell edit boundary implicitly through dependencies or
   dependents; declare each additional cell or shared surface with `WITH=`.

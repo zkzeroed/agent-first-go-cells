@@ -1,0 +1,16 @@
+id: canonical
+kind: library-package
+public: true
+purpose: "Canonicalize short user-facing labels for downstream consumers"
+entrypoints:
+  - file: api.go
+    symbol: Fold
+dependencies:
+  - text-fold
+validation:
+  - go test ./...
+conformance:
+  basis: engineering-primitive
+  status: conformant
+  evidence: verified
+  rationale: "The package demonstrates a stable module-root API backed by a private normalization helper; its text-folding behavior is intentional library policy."

@@ -16,39 +16,44 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	root := flag.String("root", ".", "project root")
+	flag.Parse()
+	if flag.NArg() != 1 {
 		fmt.Fprintln(os.Stderr, "Usage: task validate-cell ID=<cell-id>")
 		os.Exit(1)
 	}
 
-	cellID := os.Args[1]
-	manifestPath := filepath.Join("internal/cells", cellID, "cell.yaml")
-
-	content, err := os.ReadFile(manifestPath)
+	cellID := flag.Arg(0)
+	manifests, err := manifest.FindAllAt(*root)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: cannot read %s: %v\n", manifestPath, err)
+		fmt.Fprintf(os.Stderr, "Error: read manifests: %v\n", err)
 		os.Exit(1)
 	}
-
-	m, err := manifest.Parse(string(content))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: invalid manifest %s: %v\n", manifestPath, err)
+	var m *manifest.Manifest
+	for i := range manifests {
+		if manifests[i].ID == cellID {
+			m = &manifests[i]
+			break
+		}
+	}
+	if m == nil {
+		fmt.Fprintf(os.Stderr, "Error: cell %q not found\n", cellID)
 		os.Exit(1)
 	}
 	commands := m.Validation
 
 	if len(commands) == 0 {
-		fmt.Fprintf(os.Stderr, "No validation commands found in %s\n", manifestPath)
+		fmt.Fprintf(os.Stderr, "No validation commands found for %s\n", cellID)
 		os.Exit(1)
 	}
 
@@ -64,6 +69,7 @@ func main() {
 		}
 
 		c := exec.Command(parts[0], parts[1:]...)
+		c.Dir = *root
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 

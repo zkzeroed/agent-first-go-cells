@@ -26,6 +26,22 @@ forms are available for navigation commands. Task defaults place Go, ccache,
 and golangci-lint state in writable temporary locations; callers may override
 `GOCACHE`, `CCACHE_DIR`, and `GOLANGCI_LINT_CACHE`.
 
+## Library workflow
+
+Use `task new-package ID=<id> PATH=<path>` for an exportable package cell.
+It registers the package in `policy/architecture.yaml`; `PATH=.` requires
+`PACKAGE=<go-package-name>`. Public package APIs must not leak `internal` or
+private-cell types. All navigation and validation commands accept
+`ROOT=<project-root>`, including `context`, `test-cell`, and `validate-cell`.
+
+For research-driven packages, update the scaffolded `conformance` record before
+implementation. Use `task context ID=<id>` to see its basis, status, citations,
+and gaps; `task cells-json` exposes the same structured data to agents and
+automation. Cite local source files, paper sections, PDF pages, and affected
+symbols rather than placing untraceable paper claims in code comments. Use
+`task conformance ID=<id>` before declaring evidence verified; it resolves the
+local source and citation locator and verifies cited exported symbols.
+
 ## Editor support
 
 Zed loads the root guide and project skills in trusted worktrees. Its committed
@@ -40,11 +56,10 @@ duplicate portable instructions in editor-specific files.
 ## Multi-agent work
 
 One agent owns a cell at a time. `internal/platform/`, `internal/contracts/`,
-`pkg/`, and wiring are shared integration surfaces and require explicit
+and application wiring are shared integration surfaces and require explicit
 coordination. A worker stays in its declared scope, tests its cell, then hands
 off the integration work with affected files, validation results, and impact.
 
 The coordinator or work tracker manages claims and release; this repository
 does not add persistent lock state. Before handoff, report status, changed
 files, tests, lint, impact, and any remaining integration step.
-

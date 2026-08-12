@@ -1,0 +1,11 @@
+id: greeting-render
+purpose: "Render normalized greeting messages for the public library package"
+entrypoints:
+  - file: api/api.go
+    symbol: Renderer
+dependencies:
+  - text-normalize
+validation:
+  - go test ./internal/cells/greeting-render/...
+invariants:
+  - "Empty normalized names are rejected"

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/projectconfig"
 )
 
 type impactArgs struct {
@@ -143,6 +144,28 @@ func removedManifestsAtHEAD(root string, files []string) ([]manifest.Manifest, e
 		}
 		manifests = append(manifests, *removed)
 	}
+	config, err := projectconfig.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	for id, dir := range config.LibraryPackages {
+		path := filepath.ToSlash(filepath.Join(dir, "cell.yaml"))
+		if !slices.Contains(files, path) || manifestByID(id, manifests) != nil {
+			continue
+		}
+		missing, err := missingFromWorktree(root, path)
+		if err != nil {
+			return nil, err
+		}
+		if !missing {
+			continue
+		}
+		removed, err := manifestAtHEADPath(root, path, dir)
+		if err != nil {
+			return nil, err
+		}
+		manifests = append(manifests, *removed)
+	}
 	return manifests, nil
 }
 
@@ -164,6 +187,10 @@ func removedCellID(file string) (string, bool) {
 }
 
 func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
+	return manifestAtHEADPath(root, filepath.ToSlash(filepath.Join("internal", "cells", id, "cell.yaml")), filepath.Join("internal", "cells", id))
+}
+
+func manifestAtHEADPath(root, manifestPath, dir string) (*manifest.Manifest, error) {
 	repository, err := gitRoot(root)
 	if err != nil {
 		return nil, err
@@ -172,7 +199,7 @@ func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	path := filepath.ToSlash(filepath.Join(project, "internal", "cells", id, "cell.yaml"))
+	path := filepath.ToSlash(filepath.Join(project, manifestPath))
 	content, err := gitOutput(repository, "show", "HEAD:"+path)
 	if err != nil {
 		return nil, err
@@ -181,7 +208,7 @@ func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	result.Dir = filepath.Join("internal", "cells", filepath.FromSlash(id))
+	result.Dir = filepath.ToSlash(dir)
 	return &result, nil
 }
 
@@ -316,6 +343,10 @@ func findSharedSurfaces(files []string) []string {
 }
 
 func sharedSurface(file string) string {
+	return sharedSurfaceWithConfig(file)
+}
+
+func sharedSurfaceWithConfig(file string) string {
 	file = filepath.ToSlash(file)
 	switch {
 	case strings.HasPrefix(file, "internal/contracts/"):
@@ -324,6 +355,8 @@ func sharedSurface(file string) string {
 		return "platform"
 	case filepath.Dir(file) == "internal/app" && strings.HasPrefix(filepath.Base(file), "wiring") && strings.HasSuffix(file, ".go"):
 		return "wiring"
+	case strings.HasPrefix(file, "internal/") && !strings.HasPrefix(file, projectconfig.CellsRoot+"/"):
+		return "platform"
 	default:
 		return ""
 	}
@@ -332,6 +365,9 @@ func sharedSurface(file string) string {
 func isWithinCell(file, cellDir string) bool {
 	file = filepath.ToSlash(file)
 	cellDir = strings.TrimSuffix(filepath.ToSlash(cellDir), "/")
+	if cellDir == "." {
+		return filepath.Dir(file) == "."
+	}
 	return file == cellDir || strings.HasPrefix(file, cellDir+"/")
 }
 

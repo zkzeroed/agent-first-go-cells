@@ -50,3 +50,59 @@ Use this format for each entry:
 ## Log Entries
 
 <!-- Add new entries below this line, newest first. -->
+
+### 2026-08-12 — Registry-driven public-package boundaries
+
+- **Context:** Audited whether public packages at the module root, `pkg/`, and
+  named top-level directories received equivalent import protection.
+- **What worked:** The library-package registry already identifies the exact
+  directories entitled to compose declared private cells, and manifest/source
+  validation already matches those direct imports to exact dependencies.
+- **Difficulty:** A `pkg/**` policy rule protected only that naming convention;
+  registered public packages at `.` or another path could otherwise import
+  module-level internal surfaces.
+- **Cause:** The import policy mixed static source-path globs with dynamic
+  library registration, while `cellsRoot` was configurable in discovery but
+  not consistently in scaffolding and structural tooling.
+- **Fix applied:** Made private cells a fixed `internal/cells` convention,
+  removed the partial `cellsRoot` configuration, and made import validation
+  registry-driven. Every registered library package may directly import only
+  private-cell implementations; `internal/app`, `internal/platform`, and
+  `internal/contracts` are rejected regardless of its public path.
+- **Suggested improvement:** Keep any future private-root customization as an
+  all-tooling migration, rather than reintroducing a partial configuration
+  field.
+- **Files/commands:** `tools/agent/imports`, `tools/agent/projectconfig`,
+  `policy/architecture.yaml`, `task policy`, `task ready` across all examples.
+
+### 2026-08-12 — First research-library package walkthrough
+
+- **Context:** Created `examples/research-library-project` solely through the
+  public-package and private-cell scaffolds, then implemented a cited modular
+  reduction package and navigated it through index, context, scope, dependency,
+  targeted validation, and readiness checks.
+- **What worked:** The library scaffold registered the importable package; its
+  conformance placeholder was immediately visible in `task scope`. Replacing
+  it with a paper-defined record appeared in `task context` and `task
+  cells-json`. The manifest/source entrypoint check stopped an incorrect
+  private-cell symbol before generated metadata could be trusted. `task ready`
+  validated both the public package and its private helper.
+- **Difficulty:** A new project cannot run `task orient` until `task index` has
+  been run once. The private-cell scaffold is broad for a narrow helper and
+  creates several unrelated TODO files. The conformance validator accepts a
+  nonexistent citation path and accepts `pdfPages` for a non-PDF source, so a
+  record can look more authoritative than its local evidence warrants.
+- **Cause:** `orient` delegates to the index-reading `cells` command; the
+  generic application-cell template is reused for library helpers; citation
+  syntax is validated but citations are not resolved or type-checked.
+- **Fix applied:** Added the runnable research-library example, corrected a
+  manifest entrypoint mismatch found by `task index`, made `orient` refresh the
+  index, changed `new-cell` to a lean default with `new-cell-ext` retaining the
+  extended application template, and added typed, locally resolved citation
+  locators plus verified-evidence enforcement.
+- **Suggested improvement:** Consider validating PDF page bounds in a future
+  PDF-aware evidence checker; current validation confirms local file type and
+  declared positive page locators, but does not parse PDF pagination.
+- **Files/commands:** `examples/research-library-project`; `task index`,
+  `task orient`, `task context`, `task scope`, `task validate-cell`, `task
+  ready`.

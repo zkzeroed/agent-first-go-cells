@@ -3,8 +3,10 @@
 ## Dependency direction
 
 Cells import only another cell's `api` package and declare the corresponding
-exact ID in `cell.yaml`. `internal/app/wiring.go` constructs and connects cells;
-it stays below 300 lines and may be split by concern when needed.
+exact ID in `cell.yaml`. In an application, `cmd/<name>/main.go` owns lifecycle
+and `internal/app/wiring*.go` constructs and connects cells; wiring stays below
+300 lines and may be split by concern when needed. A library has neither:
+its registered public package constructs its declared private helper cells.
 `internal/contracts/` holds only genuine cross-cutting interfaces with no
 natural cell owner.
 

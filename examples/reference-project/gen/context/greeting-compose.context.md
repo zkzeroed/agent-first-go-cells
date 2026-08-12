@@ -5,6 +5,10 @@
 
 **Purpose:** Compose a greeting from a validated name
 
+**Kind:** private cell
+
+**Public:** false
+
 **Entrypoints:**
 
 - `api/api.go`

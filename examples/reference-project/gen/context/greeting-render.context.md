@@ -5,6 +5,10 @@
 
 **Purpose:** Render greetings over HTTP
 
+**Kind:** private cell
+
+**Public:** false
+
 **Entrypoints:**
 
 - `api/api.go`

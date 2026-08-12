@@ -22,11 +22,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
 var requiredSections = []string{
@@ -39,31 +41,27 @@ var requiredSections = []string{
 }
 
 func main() {
+	root := flag.String("root", ".", "project root")
+	flag.Parse()
 	exitCode := 0
 
 	fmt.Println("=== AGENTS.md Validation ===")
 
+	manifests, err := manifest.FindAllAt(*root)
+	if err != nil {
+		fmt.Printf("  ✗ reading manifests: %v\n", err)
+		exitCode = 1
+	}
 	count := 0
-	if err := filepath.WalkDir("internal/cells", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() || d.Name() != "AGENTS.md" {
-			return nil
-		}
-
-		label := path
-		if err := checkFile(path, label); err != nil {
+	for _, cell := range manifests {
+		path := filepath.Join(*root, cell.Dir, "AGENTS.md")
+		if err := checkFile(path, filepath.ToSlash(filepath.Join(cell.Dir, "AGENTS.md"))); err != nil {
 			fmt.Printf("  ✗ %s\n", err)
 			exitCode = 1
 		} else {
-			fmt.Printf("  ✓ %s — all sections present\n", label)
+			fmt.Printf("  ✓ %s — all sections present\n", filepath.ToSlash(filepath.Join(cell.Dir, "AGENTS.md")))
 			count++
 		}
-		return nil
-	}); err != nil && !os.IsNotExist(err) {
-		fmt.Printf("  ✗ walking internal/cells: %v\n", err)
-		exitCode = 1
 	}
 
 	if exitCode == 0 {

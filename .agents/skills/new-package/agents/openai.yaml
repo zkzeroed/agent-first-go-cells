@@ -1,0 +1,4 @@
+interface:
+  display_name: "New Go Package"
+  short_description: "Create a public library-package cell"
+  default_prompt: "Create a public Go library package cell using the project library-mode workflow."

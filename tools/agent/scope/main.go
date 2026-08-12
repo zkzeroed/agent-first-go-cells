@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/projectconfig"
 )
 
 type arguments struct {
@@ -22,6 +23,9 @@ type arguments struct {
 
 type report struct {
 	CellID       string
+	Kind         string
+	Public       bool
+	Conformance  manifest.Conformance
 	Purpose      string
 	Owned        []string
 	Entrypoints  []string
@@ -107,6 +111,9 @@ func buildReport(args arguments) (report, error) {
 	}
 	result := report{
 		CellID:       target.ID,
+		Kind:         target.Kind,
+		Public:       target.Public,
+		Conformance:  target.Conformance,
 		Purpose:      target.Purpose,
 		Owned:        []string{target.Dir, filepath.ToSlash(filepath.Join("gen", "context", target.ID+".context.md")), "gen/cells.json"},
 		Entrypoints:  entrypoints(*target),
@@ -148,6 +155,16 @@ func missingHeadManifests(root string, target manifest.Manifest) ([]manifest.Man
 	}
 	var result []manifest.Manifest
 	for _, file := range files {
+		if file == filepath.ToSlash(filepath.Join(target.Dir, "cell.yaml")) {
+			missing, err := missingFromWorktree(root, file)
+			if err != nil {
+				return nil, err
+			}
+			if missing {
+				result = append(result, target)
+			}
+			continue
+		}
 		id, found := removedCellID(file)
 		if !found || !isWithin(file, target.Dir) {
 			continue
@@ -177,6 +194,14 @@ func scopeLabels(values []string) []string {
 }
 
 func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
+	config, err := projectconfig.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	dir := filepath.Join(projectconfig.CellsRoot, filepath.FromSlash(id))
+	if libraryDir, found := config.LibraryPackages[id]; found {
+		dir = libraryDir
+	}
 	repository, err := gitRoot(root)
 	if err != nil {
 		return nil, err
@@ -185,7 +210,7 @@ func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	path := filepath.ToSlash(filepath.Join(project, "internal", "cells", id, "cell.yaml"))
+	path := filepath.ToSlash(filepath.Join(project, dir, "cell.yaml"))
 	content, err := gitOutput(repository, "show", "HEAD:"+path)
 	if err != nil {
 		return nil, err
@@ -194,7 +219,7 @@ func manifestAtHEAD(root, id string) (*manifest.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	result.Dir = filepath.Join("internal", "cells", filepath.FromSlash(id))
+	result.Dir = filepath.ToSlash(dir)
 	return &result, nil
 }
 
@@ -368,6 +393,9 @@ func isAllowed(file string, allowed []string, target manifest.Manifest, manifest
 		if item == "@platform" && strings.HasPrefix(file, "internal/platform/") {
 			return true
 		}
+		if item == "@platform" && strings.HasPrefix(file, "internal/") && !strings.HasPrefix(file, "internal/cells/") && !strings.HasPrefix(file, "internal/contracts/") {
+			return true
+		}
 		if item == "@wiring" && isWiringFile(file) {
 			return true
 		}
@@ -397,6 +425,9 @@ func belongsToCell(file, id string, manifests []manifest.Manifest) bool {
 func isWithin(path, directory string) bool {
 	path = filepath.ToSlash(path)
 	directory = strings.TrimSuffix(filepath.ToSlash(directory), "/")
+	if directory == "." {
+		return filepath.Dir(path) == "."
+	}
 	return path == directory || strings.HasPrefix(path, directory+"/")
 }
 
@@ -410,6 +441,9 @@ func printReport(report report, verify bool) {
 		title = "Scope Verification"
 	}
 	fmt.Printf("=== %s: %s ===\n", title, report.CellID)
+	printValues("Kind", []string{displayKind(report.Kind)})
+	printValues("Public", []string{fmt.Sprintf("%t", report.Public)})
+	printConformance(report.Conformance)
 	printValues("Purpose", []string{report.Purpose})
 	printValues("Owned paths", report.Owned)
 	printValues("Declared scope", report.Allowed)
@@ -422,6 +456,38 @@ func printReport(report report, verify bool) {
 		printValues("Changed files", report.Changed)
 		printValues("Out-of-scope files", report.OutOfScope)
 	}
+}
+
+func printConformance(value manifest.Conformance) {
+	if value.Basis == "" {
+		return
+	}
+	printValues("Conformance basis", []string{value.Basis})
+	printValues("Conformance status", []string{value.Status})
+	printValues("Conformance evidence", []string{value.Evidence})
+	if value.Rationale != "" {
+		printValues("Conformance rationale", []string{value.Rationale})
+	}
+	if len(value.Gaps) > 0 {
+		printValues("Conformance gaps", value.Gaps)
+	}
+	for _, citation := range value.Citations {
+		printValues("Conformance citation", []string{fmt.Sprintf("%s, %s; symbols: %s", citation.File, displayLocator(citation.Locator), strings.Join(citation.Symbols, ", "))})
+	}
+}
+
+func displayLocator(locator manifest.CitationLocator) string {
+	if locator.Type == "markdown-heading" {
+		return "heading " + fmt.Sprintf("%q", locator.Heading)
+	}
+	return fmt.Sprintf("PDF pages %v", locator.Pages)
+}
+
+func displayKind(kind string) string {
+	if kind == "" {
+		return "private cell"
+	}
+	return kind
 }
 
 func printValues(title string, values []string) {

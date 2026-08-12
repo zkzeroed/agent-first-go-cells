@@ -8,12 +8,23 @@ This is a bootstrap repository, not an application. Start a project here when
 you want behavior-oriented modules, explicit composition, and guardrails that
 are executable rather than merely documented.
 
+It supports both private application cells and exportable library-package
+cells. Application cells live in `internal/cells`; public package cells live
+at normal Go import paths and are registered in `policy/architecture.yaml`.
+`internal/cells` is the fixed private-cell convention; public packages may use
+the module root or any non-`internal` relative path, including `pkg/`.
+
 ## The idea
 
 A **cell** is one business capability. It owns its vocabulary, API contract,
 implementation, tests, manifest, and guide in one directory. Cells form a
-modular monolith: they communicate only through explicit `api` packages and
-are assembled in one composition root.
+modular monolith: they communicate only through explicit `api` packages.
+
+For an executable application, `cmd/<name>/main.go` owns process lifecycle
+(configuration, signals, server start and shutdown) and delegates dependency
+construction to `internal/app/wiring*.go`. For a library, do not add `cmd/` or
+`internal/app/wiring.go`: the registered public package is its composition root
+and constructs its declared private helpers behind the exported API.
 
 The familiar foundations are vertical slices, modular boundaries, and
 ports-and-adapters. The differentiator is the operational layer for agents:
@@ -46,9 +57,69 @@ task verify-scope ID=<cell-id>
 task ready
 ```
 
-Create a capability with `task new-cell ID=user-authenticate`, then build it
-inside-out: public API, types and errors, store, service, handler, tests,
-manifest, guide, and explicit wiring.
+Create a focused capability with `task new-cell ID=user-authenticate`; it
+starts with the manifest, guide, API contract, implementation, and test. Use
+`task new-cell-ext ID=user-authenticate` when the capability needs the fuller
+application template for types, errors, store, service, and handler layers.
+
+For an exportable library package, use `task new-package ID=field PATH=field`.
+Consumers import `<module>/field`; implementation helpers stay unexported in
+that package, `field/internal/`, or declared private cells. A public package
+may import only its declared `internal/cells` implementations; it must not
+reach into module-level app, platform, or contract internals.
+
+Choose the layout that matches the consumer:
+
+```text
+# Application: main owns lifecycle; wiring owns composition.
+cmd/myapp/main.go
+internal/app/wiring.go
+internal/cells/
+└── user-authenticate/
+    ├── api/api.go
+    ├── cell.yaml
+    └── service.go
+
+# Library: stable Go import path; no cmd/ or application wiring.
+field/
+├── cell.yaml            # kind: library-package, public: true
+├── field.go             # exported downstream API
+└── internal/            # package-private helpers (optional)
+internal/cells/
+└── field-encode/        # declared private helper cell (optional)
+```
+
+## Research-driven agentic engineering
+
+Public library packages can record the provenance of their behavior directly in
+`cell.yaml`. A conformance record tells the next agent whether the package
+implements paper-defined mathematics, fixed profile policy, or an engineering
+primitive; it also records implementation status, local paper citations, and
+known gaps.
+
+```yaml
+conformance:
+  basis: paper-defined-math
+  status: simplified
+  evidence: unverified
+  citations:
+    - file: docs/papers/protocol.pdf
+      locator:
+        type: pdf-pages
+        pages: [12, 13]
+      symbols: [Prove, Verify]
+  gaps:
+    - "Uses the reference algorithm; optimized proving is not implemented."
+```
+
+`task context ID=<id>` and `task cells-json` expose this provenance without
+opening every source file. The manifest validator requires citations for
+paper-defined work, rationale for policy or engineering work, and explicit
+gaps for every non-conformant status. Set `evidence: verified` only after the
+validator can resolve every local citation and its exported symbols; use
+`task conformance ID=<id>` for that focused check. This turns research reading
+into a bounded, reviewable input to implementation rather than an undocumented
+assumption.
 
 ## What an agent can prove before handoff
 
@@ -57,6 +128,7 @@ manifest, guide, and explicit wiring.
 | Where does this work belong? | Cell metadata and a bounded context pack | `task find-cell`, `task context` |
 | What may change? | Exact cell ownership plus explicitly declared shared surfaces | `task scope` |
 | What else can it affect? | Exact dependency graph and conservative shared-surface analysis | `task deps`, `task impact` |
+| What research governs an export? | Conformance basis, citations, and known gaps | `task context`, `task cells-json` |
 | Did the work stay safe? | Fail-closed scope check plus architecture, test, and status checks | `task verify-scope`, `task ready` |
 
 Agents may extend scope only with exact cell IDs or the explicit shared-surface
@@ -82,7 +154,11 @@ internal/cells/user-authenticate/
 ## Non-negotiable boundaries
 
 - Cells import another cell's `api` package, never its implementation.
-- `internal/app/wiring.go` is the sole composition root; it has no `init()`.
+- In an application, `cmd/<name>/main.go` starts the process and
+  `internal/app/wiring*.go` is the sole private-cell composition root; neither
+  uses `init()`.
+- In a library, the registered public package is the composition root; it has
+  no `cmd/` or application wiring.
 - Every cell has `cell.yaml`, `doc.go`, and `AGENTS.md`.
 - Files stay within 300 lines and functions within 40 lines unless a specific
   exception documents `AGENT_OVERRIDE`.
@@ -144,6 +220,15 @@ cryptographic token flow. Its complete workflow is available from the root:
 ```bash
 task cells ROOT=examples/reference-project
 task ready ROOT=examples/reference-project
+```
+
+The [library project](examples/library-project/README.md) demonstrates an
+exportable `greeting` package composing private helper cells:
+
+```bash
+task cells ROOT=examples/library-project
+task deps ID=greeting ROOT=examples/library-project
+task ready ROOT=examples/library-project
 ```
 
 ## Architecture reference

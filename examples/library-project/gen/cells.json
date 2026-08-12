@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "agent-first/v5",
+  "hash": "sha256:bce355a948065afa345073661372e0ca5970d83ef24bf41f16f0d8bee168b558",
+  "cells": [
+    {
+      "id": "greeting",
+      "path": "greeting",
+      "package": "greeting",
+      "kind": "library-package",
+      "public": true,
+      "purpose": "Expose stable greeting messages to downstream Go consumers",
+      "entrypoints": [
+        "greeting.go"
+      ],
+      "dependencies": [
+        "greeting-render",
+        "text-normalize"
+      ],
+      "validation": [
+        "go test ./greeting/..."
+      ],
+      "conformance": {
+        "basis": "engineering-primitive",
+        "status": "conformant",
+        "evidence": "verified",
+        "rationale": "This example demonstrates a stable exported package composed from private cells; it does not implement a paper-defined protocol."
+      }
+    },
+    {
+      "id": "greeting-render",
+      "path": "internal/cells/greeting-render",
+      "package": "greetingrender",
+      "public": false,
+      "purpose": "Render normalized greeting messages for the public library package",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [
+        "text-normalize"
+      ],
+      "validation": [
+        "go test ./internal/cells/greeting-render/..."
+      ]
+    },
+    {
+      "id": "text-normalize",
+      "path": "internal/cells/text-normalize",
+      "package": "textnormalize",
+      "public": false,
+      "purpose": "Normalize display names for private library composition",
+      "entrypoints": [
+        "api/api.go"
+      ],
+      "dependencies": [],
+      "validation": [
+        "go test ./internal/cells/text-normalize/..."
+      ]
+    }
+  ]
+}

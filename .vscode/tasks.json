@@ -144,6 +144,30 @@
       "args": ["new-cell", "ID=${input:newCellId}"],
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
+    },
+    {
+      "label": "Agent: New Extended Cell",
+      "type": "process",
+      "command": "task",
+      "args": ["new-cell-ext", "ID=${input:newCellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: New Public Package",
+      "type": "process",
+      "command": "task",
+      "args": ["new-package", "ID=${input:newPackageId}", "PATH=${input:newPackagePath}", "PACKAGE=${input:newPackageName}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Conformance",
+      "type": "process",
+      "command": "task",
+      "args": ["conformance", "ID=${input:cellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
     }
   ],
   "inputs": [
@@ -169,6 +193,24 @@
       "id": "newCellId",
       "type": "promptString",
       "description": "New cell ID in kebab-case, optionally domain/action",
+      "default": ""
+    },
+    {
+      "id": "newPackageId",
+      "type": "promptString",
+      "description": "Public library package cell ID in kebab-case",
+      "default": ""
+    },
+    {
+      "id": "newPackagePath",
+      "type": "promptString",
+      "description": "Public package path; use . for module root",
+      "default": ""
+    },
+    {
+      "id": "newPackageName",
+      "type": "promptString",
+      "description": "Go package name; required when the path is .",
       "default": ""
     }
   ]

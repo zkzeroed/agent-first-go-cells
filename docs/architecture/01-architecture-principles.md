@@ -21,8 +21,11 @@ the result straightforward for human developers.
    function documents `AGENT_OVERRIDE`; AST-based structural tests enforce
    both and `cyclop` has a maximum 16 complexity limit.
 3. A cell exposes only `api/api.go`; other cells never import its implementation.
-4. `internal/app/wiring.go` is the sole explicit composition root. No `init()`,
-   reflection DI, or service locators.
+4. In an application, `cmd/<name>/main.go` owns process lifecycle and
+   `internal/app/wiring*.go` is the sole explicit private-cell composition root.
+   In a library, the registered public package is the composition root; it has
+   no `cmd/` or application wiring. No `init()`, reflection DI, or service
+   locators.
 5. `cell.yaml` declares exact dependencies and validation. Generated metadata
    is derived from it and is never edited manually.
 

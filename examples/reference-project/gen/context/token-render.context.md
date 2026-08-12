@@ -5,6 +5,10 @@
 
 **Purpose:** Render newly issued opaque tokens over HTTP
 
+**Kind:** private cell
+
+**Public:** false
+
 **Entrypoints:**
 
 - `api/api.go`

@@ -1,0 +1,10 @@
+id: text-normalize
+purpose: "Normalize display names for private library composition"
+entrypoints:
+  - file: api/api.go
+    symbol: Normalizer
+dependencies: []
+validation:
+  - go test ./internal/cells/text-normalize/...
+invariants:
+  - "Normalized names are trimmed and title cased by words"

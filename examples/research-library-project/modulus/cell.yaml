@@ -1,0 +1,21 @@
+id: modulus
+kind: library-package
+public: true
+purpose: "Reduce signed integers modulo the fixed prime 97"
+entrypoints:
+  - file: api.go
+    symbol: Reduce
+dependencies:
+  - modulus-reduce
+validation:
+  - go test ./modulus/...
+conformance:
+  basis: paper-defined-math
+  status: conformant
+  evidence: verified
+  citations:
+    - file: docs/research/modular-reduction.md
+      locator:
+        type: markdown-heading
+        heading: "Euclidean remainder"
+      symbols: [Reduce]

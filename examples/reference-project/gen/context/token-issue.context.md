@@ -5,6 +5,10 @@
 
 **Purpose:** Issue random opaque tokens and retain only their SHA-256 digests
 
+**Kind:** private cell
+
+**Public:** false
+
 **Entrypoints:**
 
 - `api/api.go`

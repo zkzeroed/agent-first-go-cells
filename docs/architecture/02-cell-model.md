@@ -8,7 +8,7 @@ Taskfile.yml              executable agent workflow
 .agents/skills/           project-local task guidance
 .vscode/                  optional VS Code tasks, settings, and recommendations
 internal/
-  app/wiring.go           explicit composition root
+  app/wiring.go           application composition root
   cells/<id>/             capability cells
   contracts/              cross-cutting contracts only
   platform/               concrete infrastructure
@@ -58,8 +58,49 @@ contained Go file and declared top-level symbol. Dependencies are exact existing
 cell IDs and must match direct imports of those cells' `api` packages.
 `invariants` is optional and records properties an agent must preserve.
 
+Public library packages also require `conformance` metadata. It makes the
+implementation basis, current status, local research citations, and known gaps
+available through generated context. Use `paper-defined-math` with citations
+for direct research implementations; use `fixed-profile-policy` or
+`engineering-primitive` with a rationale for deliberate non-paper decisions.
+Any status other than `conformant` must list its remaining gaps.
+
+Each record also declares `evidence: verified` or `unverified`. A conformant
+record must be verified. Verified citations are resolved inside the project:
+PDF citations use `locator.type: pdf-pages`; Markdown citations use
+`locator.type: markdown-heading`. The cited symbols must be exported by the
+library package. Use `task conformance ID=<id>` to validate and print only this
+research contract.
+
 `task index` derives `gen/cells.json` and `gen/context/<id>.context.md` from
 the manifest and local guide. `task check-index` rejects stale, missing, or
 orphaned generated metadata. Use `task context ID=<id>` for the compact pack;
 never edit generated files by hand.
 
+## Library packages
+
+An exportable package is a `kind: library-package` manifest registered by ID
+and directory in `policy/architecture.yaml`. Its directory is a normal Go
+package path (including `.` for the module root), not `internal/cells`. It may
+compose a declared private cell, but exported declarations must not expose
+private-cell or `internal` types. Use `task new-package ID=field PATH=field`
+to scaffold and register one.
+
+A library is not an executable application: do not add `cmd/` or
+`internal/app/wiring.go` merely to construct it. The registered public package
+is the composition root and returns its stable exported API to downstream
+consumers.
+
+A registered public package may directly import only its declared private-cell
+implementations. It may not import `internal/app`, `internal/platform`, or
+`internal/contracts`; package-local helpers belong beside the API or below that
+package's own `internal/` directory.
+
+Private cells always live under `internal/cells`; this is a fixed convention,
+not a configurable project setting. Public packages may use any non-`internal`
+relative directory—including `pkg/`—but that directory is part of the public
+Go import path, not a special export mechanism.
+
+Every library package must include a conformance record. `task new-package`
+creates a clearly marked placeholder so a package cannot be mistaken for
+research-backed production behavior before its provenance is documented.

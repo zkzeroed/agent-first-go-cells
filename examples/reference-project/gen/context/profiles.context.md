@@ -5,6 +5,10 @@
 
 **Purpose:** Own shared profile vocabulary and repository contracts
 
+**Kind:** private cell
+
+**Public:** false
+
 **Entrypoints:**
 
 - `api/api.go`

@@ -2,7 +2,7 @@
 
 This runnable example demonstrates six cells, including a nested profiles domain,
 explicit `api` boundaries,
-exact manifest dependencies, tests, and composition in `cmd/reference/main.go`. The token flow uses
+exact manifest dependencies, tests, and composition in `internal/app/wiring.go`. The token flow uses
 `crypto/rand` for entropy and `crypto/sha256` for digest-only storage.
 
 ```bash

@@ -69,5 +69,24 @@
     "label": "Reference: Ready",
     "command": "task ready ROOT=examples/reference-project",
     "save": "all"
+  },
+  {
+    "label": "Library: Cells",
+    "command": "task cells ROOT=examples/library-project"
+  },
+  {
+    "label": "Library: Ready",
+    "command": "task ready ROOT=examples/library-project",
+    "save": "all"
+  },
+  {
+    "label": "Research Library: Conformance",
+    "command": "task conformance ID=modulus ROOT=examples/research-library-project",
+    "save": "all"
+  },
+  {
+    "label": "Module-Root Library: Ready",
+    "command": "task ready ROOT=examples/module-root-library-project",
+    "save": "all"
   }
 ]

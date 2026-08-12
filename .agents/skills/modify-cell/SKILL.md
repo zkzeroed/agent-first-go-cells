@@ -19,6 +19,12 @@ The `task deps` output shows:
 - **Dependents**: cells that depend on THIS cell (reverse deps)
 
 If cells appear in "Dependents", changing the interface may break them.
+For a `library-package`, its package directory is the stable downstream API.
+Check exported signatures and public-package consumers in addition to manifest
+dependents; do not expose private-cell or `internal` types.
+When changing research-backed behavior, update its `conformance` citations,
+status, or gaps in the same change; `task context ID=<id>` is the compact
+review surface for that provenance.
 
 ## Modification Order
 
@@ -44,8 +50,15 @@ If cells appear in "Dependents", changing the interface may break them.
 1. **Import the target cell's `api` package** where the dependency is used
 2. **Add the target cell's exact ID** to `cell.yaml` `dependencies`
 3. **Add to `Deps` struct** in `<name>.go`
-4. **Wire in `internal/app/wiring.go`**
+4. **For an application, wire in `internal/app/wiring.go`**
 5. **Validate**: `task index && task test-cell ID=<id> && task doctor`
+
+For a library package composing a private cell, add the private cell's exact
+ID to `dependencies` and construct it in the library package—do not add `cmd/`
+or application wiring. Private cells
+continue to import other cells only through their `api` package.
+Library packages may not import `internal/app`, `internal/platform`, or
+`internal/contracts`.
 
 ### If adding a new method to the interface:
 
@@ -54,7 +67,7 @@ If cells appear in "Dependents", changing the interface may break them.
 3. **Add handler** if HTTP-exposed (in `handler.go`)
 4. **Add test** in `*_test.go`
 5. **Update `cell.yaml`** if entrypoints changed
-6. **Wire in `wiring.go`** if new deps needed
+6. **For an application, wire in `wiring.go`** if new deps are needed
 7. **Validate**: `task index && task test-cell ID=<id> && task impact && task doctor`
 
 ## After All Changes
@@ -70,7 +83,9 @@ task doctor         # architecture health check
 ## Rules
 
 - **Never modify another cell's internal files.** Only use its interface.
-- **Never modify `wiring.go` from within a cell.** Wiring is centralized.
+- **Never modify `wiring.go` from within a private cell.** Applications keep
+  composition centralized; a configured library package composes declared
+  private cells directly and has no `cmd/` or application wiring.
 - **Always run `task impact` after changes.** It catches under-tested blast radius.
 - **Expand scope deliberately.** For a sibling cell or shared surface, pass
   only the needed exact IDs or `@contracts`, `@platform`, and `@wiring` through

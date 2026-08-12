@@ -15,16 +15,18 @@ task deps ID=user-authenticate    # see dependency graph
 task scope ID=user-authenticate   # print the explicit edit boundary
 ```
 
-For the reference project, root-capable tools accept `ROOT=examples/reference-project`:
+Root-capable tools accept `ROOT=<project-root>`, including both examples:
 
 ```bash
 task cells ROOT=examples/reference-project
 task deps ID=greeting-render ROOT=examples/reference-project
 task find-cell QUERY=greeting ROOT=examples/reference-project
 task impact ROOT=examples/reference-project
+task cells ROOT=examples/library-project
+task deps ID=greeting ROOT=examples/library-project
 ```
 
-`context` is repository-root only.
+`context` also accepts `ROOT=<project-root>`.
 
 ## Navigation Workflow
 
@@ -64,7 +66,12 @@ crosses those boundaries.
 task context ID=user-authenticate
 ```
 
-This prints the generated context pack: purpose, entrypoints, dependencies, invariants, validation commands.
+This prints the generated context pack: purpose, kind and visibility,
+entrypoints, dependencies, invariants, validation commands, and—for a library
+package—conformance basis, status, citations, rationale, and gaps.
+For verified evidence, citations include typed PDF-page or Markdown-heading
+locators; use `task conformance ID=<id>` to validate and print that record
+alone.
 
 For full detail, read the cell's files in order:
 
@@ -93,6 +100,24 @@ internal/cells/<cell-id>/
 ├── handler.go         # HTTP handler
 └── *_test.go          # tests
 ```
+
+Library-package cells are ordinary Go package directories registered in
+`policy/architecture.yaml`:
+
+```
+greeting/
+├── cell.yaml          # kind: library-package, public: true
+├── AGENTS.md
+├── doc.go
+└── greeting.go         # stable downstream API
+```
+
+They may compose declared private cells under `internal/cells/`. Consumers
+import the library package; private cell and `internal` types never appear in
+exported declarations. The library package may not import module-level
+`internal/app`, `internal/platform`, or `internal/contracts`. It also has no
+`cmd/` or application wiring: the registered public package is its composition
+root.
 
 Domain cells have sub-actions:
 

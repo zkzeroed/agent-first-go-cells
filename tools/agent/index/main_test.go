@@ -47,6 +47,21 @@ func TestContextPackIncludesAgentsSourceAndHashChanges(t *testing.T) {
 	}
 }
 
+func TestIndexAndContextPackExposeLibraryMetadata(t *testing.T) {
+	cell := manifest.Manifest{ID: "greeting", Kind: "library-package", Public: true, Purpose: "greet", Conformance: manifest.Conformance{Basis: "paper-defined-math", Status: "conformant", Evidence: "verified", Citations: []manifest.Citation{{File: "docs/paper.pdf", Locator: manifest.CitationLocator{Type: "pdf-pages", Pages: []uint{4}}, Symbols: []string{"New"}}}}, RawContent: "id: greeting\n", AgentsContent: "# Guide\n"}
+	index := buildIndex([]manifest.Manifest{cell})
+	if got := index.Cells[0]; got.Kind != "library-package" || !got.Public {
+		t.Fatalf("library metadata = kind %q, public %t; want library-package, true", got.Kind, got.Public)
+	}
+	if got := index.Cells[0].Conformance; got == nil || got.Basis != "paper-defined-math" || len(got.Citations) != 1 {
+		t.Fatalf("conformance = %#v, want generated paper record", got)
+	}
+	pack := buildContextPack(cell)
+	if !strings.Contains(pack, "**Kind:** library-package") || !strings.Contains(pack, "**Public:** true") || !strings.Contains(pack, "docs/paper.pdf") {
+		t.Fatalf("context pack did not include library metadata: %q", pack)
+	}
+}
+
 func TestBoundedGuidePreservesSmallGuidesAndMarksLargeOnes(t *testing.T) {
 	if got := boundedGuide("small"); got != "small" {
 		t.Fatalf("boundedGuide(small) = %q", got)

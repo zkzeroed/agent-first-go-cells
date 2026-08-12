@@ -28,6 +28,8 @@ import (
 type CellRecord struct {
 	ID      string `json:"id"`
 	Path    string `json:"path"`
+	Kind    string `json:"kind,omitempty"`
+	Public  bool   `json:"public"`
 	Purpose string `json:"purpose"`
 }
 
@@ -87,7 +89,7 @@ func main() {
 			if len(purpose) > 50 {
 				purpose = purpose[:47] + "..."
 			}
-			fmt.Printf("  %-20s %-45s \"%s\"", c.ID, c.Path, purpose)
+			fmt.Printf("  %-20s %-45s %-16s public=%-5t \"%s\"", c.ID, c.Path, displayKind(c.Kind), c.Public, purpose)
 			if matchSource != "" && matchSource != "ID" && matchSource != "purpose" {
 				fmt.Printf("  (%s)", matchSource)
 			}
@@ -99,6 +101,13 @@ func main() {
 	if !found {
 		fmt.Println("  No matches found.")
 	}
+}
+
+func displayKind(kind string) string {
+	if kind == "" {
+		return "private cell"
+	}
+	return kind
 }
 
 func searchAgentsMD(cellPath, query string) string {

@@ -29,8 +29,12 @@ tasks:
   orient:
     desc: Orient an agent entering the repository (cells + doctor + status)
     cmds:
+      - task: index
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: cells
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: doctor
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - git --no-pager status --short
       - 'echo "→ Use: task find-cell QUERY=<topic> to find a cell"'
       - 'echo "→ Use: task context ID=<cell-id> to read a cell"'
@@ -46,6 +50,7 @@ tasks:
     desc: Standard pre-handoff validation for agents (doctor + impact + test)
     cmds:
       - task: doctor
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: impact
         vars: {ROOT: '{{.ROOT | default "."}}'}
       - |
@@ -62,9 +67,13 @@ tasks:
     desc: Fast post-edit validation (structure + policy + manifests + index)
     cmds:
       - task: structure-test
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: policy
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: check-manifests
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: check-index
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - 'echo "✓ Quick check passed"'
 
   setup:
@@ -134,6 +143,9 @@ tasks:
       - task: test-unit
       - task: test-integration
       - task: test-reference
+      - task: test-library
+      - task: test-research-library
+      - task: test-module-root-library
 
   test-unit:
     desc: Run bootstrap unit and tooling tests (fast, no external deps)
@@ -158,6 +170,21 @@ tasks:
     cmds:
       - (cd examples/reference-project && go test -race -count=1 ./...)
 
+  test-library:
+    desc: Run the library example's tests with the race detector
+    cmds:
+      - (cd examples/library-project && go test -race -count=1 ./...)
+
+  test-research-library:
+    desc: Run the research-library example's tests with the race detector
+    cmds:
+      - (cd examples/research-library-project && go test -race -count=1 ./...)
+
+  test-module-root-library:
+    desc: Run the module-root library example's tests with the race detector
+    cmds:
+      - (cd examples/module-root-library-project && go test -race -count=1 ./...)
+
   fuzz:
     desc: "Bounded manifest-parser fuzz test. Optional: FUZZ_TIME=30s"
     cmds:
@@ -168,20 +195,27 @@ tasks:
     requires:
       vars: [ID]
     cmds:
-      - go test -race -count=1 -v ./internal/cells/{{.ID}}/...
+      - |
+        root="{{.ROOT | default "."}}"
+        path=$(go run ./tools/agent/cell-path/ --root "$root" {{.ID}})
+        (cd "$root" && go test -race -count=1 -v "./$path/...")
 
   lint:
     desc: Run golangci-lint for the bootstrap and reference modules
     cmds:
       - golangci-lint run ./...
       - (cd examples/reference-project && golangci-lint run ./...)
+      - (cd examples/library-project && golangci-lint run ./...)
 
   lint-cell:
     desc: "Lint a specific cell. Usage: task lint-cell ID=user-authenticate"
     requires:
       vars: [ID]
     cmds:
-      - golangci-lint run ./internal/cells/{{.ID}}/...
+      - |
+        root="{{.ROOT | default "."}}"
+        path=$(go run ./tools/agent/cell-path/ --root "$root" {{.ID}})
+        (cd "$root" && golangci-lint run "./$path/...")
 
   check-files:
     desc: Enforce max file size (300 LOC)
@@ -195,33 +229,33 @@ tasks:
   check-manifests:
     desc: Validate all cell.yaml manifests
     cmds:
-      - go run ./tools/agent/index/ --json >/dev/null
+      - go run ./tools/agent/index/ --json --root "{{.ROOT | default "."}}" >/dev/null
       - echo "✓ All manifests valid"
 
   index:
-    desc: "Regenerate indexes. Optional: ROOT=examples/reference-project"
+    desc: "Regenerate indexes. Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/index/ --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes regenerated"
 
   check-index:
-    desc: "Verify indexes are fresh. Optional: ROOT=examples/reference-project"
+    desc: "Verify indexes are fresh. Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/index/ --check --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes are fresh"
 
   index-json:
-    desc: "Output index JSON. Optional: ROOT=examples/reference-project"
+    desc: "Output index JSON. Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/index/ --json --root "{{.ROOT | default "."}}"
 
   impact:
-    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=examples/reference-project"
+    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/impact/ --root "{{.ROOT | default "."}}"
 
   impact-json:
-    desc: "Show affected cells for changed files as JSON. Optional: ROOT=examples/reference-project"
+    desc: "Show affected cells for changed files as JSON. Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/impact/ --json --root "{{.ROOT | default "."}}"
 
@@ -247,30 +281,51 @@ tasks:
       - go run ./tools/agent/scope/ --verify --root "$SCOPE_ROOT" --with "$SCOPE_WITH" "$SCOPE_ID"
 
   new-cell:
-    desc: "Scaffold a new cell directory. Usage: task new-cell ID=user-authenticate"
+    desc: "Scaffold a lean private cell. Optional: ROOT=<project-root>"
     requires:
       vars: [ID]
     cmds:
-      - ./tools/agent/new-cell.sh {{.ID}}
+      - ./tools/agent/new-cell.sh --root "{{.ROOT | default "."}}" {{.ID}}
+
+  new-cell-ext:
+    desc: "Scaffold an extended application cell (service, store, handler). Optional: ROOT=<project-root>"
+    requires:
+      vars: [ID]
+    cmds:
+      - ./tools/agent/new-cell.sh --extended --root "{{.ROOT | default "."}}" {{.ID}}
+
+  conformance:
+    desc: "Validate and display a public package's research conformance. Usage: task conformance ID=field"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./tools/agent/conformance/ --root "{{.ROOT | default "."}}" {{.ID}}
+
+  new-package:
+    desc: "Scaffold a public library package. Usage: task new-package ID=field [PATH=field]"
+    requires:
+      vars: [ID]
+    cmds:
+      - go run ./tools/agent/new-package/ --root "{{.ROOT | default "."}}" --id {{.ID}} --path "{{.PATH | default ""}}" --package "{{.PACKAGE | default ""}}"
 
   scaffold-domain:
-    desc: "Scaffold a domain cell with sub-action support. Usage: task scaffold-domain ID=users"
+    desc: "Scaffold a private domain cell. Optional: ROOT=<project-root>"
     requires:
       vars: [ID]
     cmds:
-      - ./tools/agent/new-domain.sh {{.ID}}
+      - ./tools/agent/new-domain.sh --root "{{.ROOT | default "."}}" {{.ID}}
 
   validate-cell:
     desc: "Run cell's declared validation commands. Usage: task validate-cell ID=user-authenticate"
     requires:
       vars: [ID]
     cmds:
-      - go run ./tools/agent/validate-cell/ {{.ID}}
+      - go run ./tools/agent/validate-cell/ --root "{{.ROOT | default "."}}" {{.ID}}
 
   policy:
     desc: Validate import policy
     cmds:
-      - go run ./tools/agent/imports/
+      - go run ./tools/agent/imports/ --root "{{.ROOT | default "."}}"
 
   vuln:
     desc: Run govulncheck
@@ -306,27 +361,27 @@ tasks:
   structure-test:
     desc: Run architecture invariant tests
     cmds:
-      - go test -run "Test(Cell|No|Files|Every)" ./tools/agent/structure/...
+      - STRUCTURE_ROOT="{{.ROOT | default "."}}" go test -run "Test(Cell|No|Files|Every|Configured)" ./tools/agent/structure/...
 
   cells:
-    desc: "List cells. Optional: ROOT=examples/reference-project"
+    desc: "List cells. Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/cells/ --root "{{.ROOT | default "."}}"
 
   cells-json:
-    desc: "List cells as JSON. Optional: ROOT=examples/reference-project"
+    desc: "List cells as JSON. Optional: ROOT=<project-root>"
     cmds:
       - go run ./tools/agent/cells/ --json --root "{{.ROOT | default "."}}"
 
   deps:
-    desc: "Show dependencies. Optional: ROOT=examples/reference-project"
+    desc: "Show dependencies. Optional: ROOT=<project-root>"
     requires:
       vars: [ID]
     cmds:
       - go run ./tools/agent/deps/ --root "{{.ROOT | default "."}}" {{.ID}}
 
   deps-json:
-    desc: "Show dependencies as JSON. Optional: ROOT=examples/reference-project"
+    desc: "Show dependencies as JSON. Optional: ROOT=<project-root>"
     requires:
       vars: [ID]
     cmds:
@@ -337,19 +392,19 @@ tasks:
     requires:
       vars: [ID]
     cmds:
-      - go run ./tools/agent/index/ --check 2>/dev/null || go run ./tools/agent/index/
-      - cat gen/context/{{.ID}}.context.md
+      - go run ./tools/agent/index/ --check --root "{{.ROOT | default "."}}" 2>/dev/null || go run ./tools/agent/index/ --root "{{.ROOT | default "."}}"
+      - cat "{{.ROOT | default "."}}/gen/context/{{.ID}}.context.md"
 
   context-json:
     desc: "Print a cell's context pack as JSON. Usage: task context-json ID=user-authenticate"
     requires:
       vars: [ID]
     cmds:
-      - go run ./tools/agent/index/ --check 2>/dev/null || go run ./tools/agent/index/
-      - python3 -c 'import json, pathlib; print(json.dumps({"id":"{{.ID}}","context":pathlib.Path("gen/context/{{.ID}}.context.md").read_text()}, indent=2))'
+      - go run ./tools/agent/index/ --check --root "{{.ROOT | default "."}}" 2>/dev/null || go run ./tools/agent/index/ --root "{{.ROOT | default "."}}"
+      - python3 -c 'import json, pathlib; print(json.dumps({"id":"{{.ID}}","context":pathlib.Path("{{.ROOT | default "."}}/gen/context/{{.ID}}.context.md").read_text()}, indent=2))'
 
   find-cell:
-    desc: "Search cells. Optional: ROOT=examples/reference-project"
+    desc: "Search cells. Optional: ROOT=<project-root>"
     requires:
       vars: [QUERY]
     cmds:
@@ -359,16 +414,21 @@ tasks:
     desc: Run all architecture checks (fast, no build or tests)
     cmds:
       - task: check-manifests
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: check-index
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: structure-test
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: check-agents
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - task: policy
+        vars: {ROOT: '{{.ROOT | default "."}}'}
       - 'echo "✓ Doctor: all architecture checks passed"'
 
   check-agents:
     desc: Validate AGENTS.md files have required sections
     cmds:
-      - go run ./tools/agent/check-agents/
+      - go run ./tools/agent/check-agents/ --root "{{.ROOT | default "."}}"
 
   install-hooks:
     desc: Install git hooks from .githooks/ directory

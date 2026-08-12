@@ -1,44 +1,59 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"title": "cell.yaml manifest schema",
-	"description": "Machine-readable manifest for Agent-First Go architecture cells",
-	"type": "object",
-	"required": ["id", "purpose", "entrypoints", "dependencies", "validation"],
-	"properties": {
-		"id": {
-			"type": "string",
-			"pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
-			"description": "Behavior-first kebab-case identifier. Must match directory name."
-		},
-		"purpose": {
-			"type": "string",
-			"description": "One-sentence description of what the cell does."
-		},
-		"entrypoints": {
-			"type": "array",
-			"items": {
-				"type": "object",
-				"required": ["file", "symbol"],
-				"properties": {
-					"file": { "type": "string" },
-					"symbol": { "type": "string" }
-				}
-			},
-			"minItems": 1
-		},
-		"dependencies": {
-			"type": "array",
-			"items": { "type": "string" }
-		},
-		"validation": {
-			"type": "array",
-			"items": { "type": "string" },
-			"minItems": 1
-		},
-		"invariants": {
-			"type": "array",
-			"items": { "type": "string" },
-			"description": "Optional (Standard+ tier). Properties that must always hold."
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cell.yaml manifest schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "purpose", "entrypoints", "dependencies", "validation"],
+  "properties": {
+    "kind": { "type": "string", "enum": ["library-package"] },
+    "public": { "type": "boolean" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*(/[a-z][a-z0-9]*(-[a-z0-9]+)*)?$" },
+    "purpose": { "type": "string", "minLength": 1 },
+    "entrypoints": {
+      "type": "array", "minItems": 1,
+      "items": { "type": "object", "additionalProperties": false, "required": ["file", "symbol"], "properties": { "file": { "type": "string", "minLength": 1 }, "symbol": { "type": "string", "minLength": 1 } } }
+    },
+    "dependencies": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "validation": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "invariants": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "conformance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["basis", "status", "evidence"],
+      "properties": {
+        "basis": { "type": "string", "enum": ["paper-defined-math", "fixed-profile-policy", "engineering-primitive"] },
+        "status": { "type": "string", "enum": ["conformant", "simplified", "naive", "stub", "placeholder", "gap"] },
+        "evidence": { "type": "string", "enum": ["verified", "unverified"] },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["file", "locator", "symbols"],
+            "properties": {
+              "file": { "type": "string", "minLength": 1 },
+              "locator": {
+                "type": "object", "additionalProperties": false, "required": ["type"],
+                "properties": { "type": { "type": "string", "enum": ["pdf-pages", "markdown-heading"] }, "pages": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } }, "heading": { "type": "string", "minLength": 1 } },
+                "allOf": [
+                  { "if": { "properties": { "type": { "const": "pdf-pages" } }, "required": ["type"] }, "then": { "required": ["pages"] } },
+                  { "if": { "properties": { "type": { "const": "markdown-heading" } }, "required": ["type"] }, "then": { "required": ["heading"] } }
+                ]
+              },
+              "symbols": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+            }
+          }
+        },
+        "rationale": { "type": "string", "minLength": 1 },
+        "gaps": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      },
+      "allOf": [
+        { "if": { "properties": { "basis": { "const": "paper-defined-math" } }, "required": ["basis"] }, "then": { "required": ["citations"], "properties": { "citations": { "minItems": 1 } } } },
+        { "if": { "properties": { "basis": { "enum": ["fixed-profile-policy", "engineering-primitive"] } }, "required": ["basis"] }, "then": { "required": ["rationale"] } },
+        { "if": { "properties": { "status": { "const": "conformant" } }, "required": ["status"] }, "then": { "properties": { "evidence": { "const": "verified" } } } },
+        { "if": { "properties": { "status": { "enum": ["simplified", "naive", "stub", "placeholder", "gap"] } }, "required": ["status"] }, "then": { "required": ["gaps"] } }
+      ]
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "library-package" } }, "required": ["kind"] }, "then": { "required": ["public", "conformance"], "properties": { "public": { "const": true } } } }
+  ]
 }

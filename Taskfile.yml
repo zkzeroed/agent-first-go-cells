@@ -142,10 +142,6 @@ tasks:
     cmds:
       - task: test-unit
       - task: test-integration
-      - task: test-reference
-      - task: test-library
-      - task: test-research-library
-      - task: test-module-root-library
 
   test-unit:
     desc: Run bootstrap unit and tooling tests (fast, no external deps)
@@ -165,26 +161,6 @@ tasks:
           go test -race -count=1 ./test/integration/...
         fi
 
-  test-reference:
-    desc: Run the reference project's tests with the race detector
-    cmds:
-      - (cd examples/reference-project && go test -race -count=1 ./...)
-
-  test-library:
-    desc: Run the library example's tests with the race detector
-    cmds:
-      - (cd examples/library-project && go test -race -count=1 ./...)
-
-  test-research-library:
-    desc: Run the research-library example's tests with the race detector
-    cmds:
-      - (cd examples/research-library-project && go test -race -count=1 ./...)
-
-  test-module-root-library:
-    desc: Run the module-root library example's tests with the race detector
-    cmds:
-      - (cd examples/module-root-library-project && go test -race -count=1 ./...)
-
   fuzz:
     desc: "Bounded manifest-parser fuzz test. Optional: FUZZ_TIME=30s"
     cmds:
@@ -201,11 +177,9 @@ tasks:
         (cd "$root" && go test -race -count=1 -v "./$path/...")
 
   lint:
-    desc: Run golangci-lint for the bootstrap and reference modules
+    desc: Run golangci-lint for the bootstrap module
     cmds:
       - golangci-lint run ./...
-      - (cd examples/reference-project && golangci-lint run ./...)
-      - (cd examples/library-project && golangci-lint run ./...)
 
   lint-cell:
     desc: "Lint a specific cell. Usage: task lint-cell ID=user-authenticate"
@@ -233,29 +207,29 @@ tasks:
       - echo "✓ All manifests valid"
 
   index:
-    desc: "Regenerate indexes. Optional: ROOT=<project-root>"
+    desc: "Regenerate indexes. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/index/ --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes regenerated"
 
   check-index:
-    desc: "Verify indexes are fresh. Optional: ROOT=<project-root>"
+    desc: "Verify indexes are fresh. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/index/ --check --root "{{.ROOT | default "."}}"
       - echo "✓ Indexes are fresh"
 
   index-json:
-    desc: "Output index JSON. Optional: ROOT=<project-root>"
+    desc: "Output index JSON. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/index/ --json --root "{{.ROOT | default "."}}"
 
   impact:
-    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=<project-root>"
+    desc: "Show affected cells for changed files (blast-radius map). Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/impact/ --root "{{.ROOT | default "."}}"
 
   impact-json:
-    desc: "Show affected cells for changed files as JSON. Optional: ROOT=<project-root>"
+    desc: "Show affected cells for changed files as JSON. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/impact/ --json --root "{{.ROOT | default "."}}"
 
@@ -364,24 +338,24 @@ tasks:
       - STRUCTURE_ROOT="{{.ROOT | default "."}}" go test -run "Test(Cell|No|Files|Every|Configured)" ./tools/agent/structure/...
 
   cells:
-    desc: "List cells. Optional: ROOT=<project-root>"
+    desc: "List cells. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/cells/ --root "{{.ROOT | default "."}}"
 
   cells-json:
-    desc: "List cells as JSON. Optional: ROOT=<project-root>"
+    desc: "List cells as JSON. Optional: ROOT=<project-path>"
     cmds:
       - go run ./tools/agent/cells/ --json --root "{{.ROOT | default "."}}"
 
   deps:
-    desc: "Show dependencies. Optional: ROOT=<project-root>"
+    desc: "Show dependencies. Optional: ROOT=<project-path>"
     requires:
       vars: [ID]
     cmds:
       - go run ./tools/agent/deps/ --root "{{.ROOT | default "."}}" {{.ID}}
 
   deps-json:
-    desc: "Show dependencies as JSON. Optional: ROOT=<project-root>"
+    desc: "Show dependencies as JSON. Optional: ROOT=<project-path>"
     requires:
       vars: [ID]
     cmds:
@@ -404,7 +378,7 @@ tasks:
       - python3 -c 'import json, pathlib; print(json.dumps({"id":"{{.ID}}","context":pathlib.Path("{{.ROOT | default "."}}/gen/context/{{.ID}}.context.md").read_text()}, indent=2))'
 
   find-cell:
-    desc: "Search cells. Optional: ROOT=<project-root>"
+    desc: "Search cells. Optional: ROOT=<project-path>"
     requires:
       vars: [QUERY]
     cmds:

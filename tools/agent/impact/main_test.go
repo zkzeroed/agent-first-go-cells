@@ -142,7 +142,7 @@ func TestBuildReportMapsNestedProjectChangesToCells(t *testing.T) {
 	git(t, repository, "init")
 	git(t, repository, "config", "user.email", "test@example.com")
 	git(t, repository, "config", "user.name", "Impact Test")
-	project := filepath.Join(repository, "examples", "reference-project")
+	project := filepath.Join(repository, "nested", "project")
 	writeCell(t, project, "greeting-compose", nil)
 	writeCell(t, project, "greeting-render", []string{"greeting-compose"})
 	git(t, repository, "add", ".")
@@ -261,9 +261,9 @@ func TestBuildReportAcceptsModifiedAndNewManifests(t *testing.T) {
 
 func TestFilesUnderRootFiltersRepositoryPaths(t *testing.T) {
 	got, err := filesUnderRoot(
-		[]string{"tools/agent/impact/main.go", "examples/reference-project/internal/cells/example/service.go"},
+		[]string{"tools/agent/impact/main.go", "nested/project/internal/cells/example/service.go"},
 		"/repo",
-		"/repo/examples/reference-project",
+		"/repo/nested/project",
 	)
 	if err != nil {
 		t.Fatal(err)

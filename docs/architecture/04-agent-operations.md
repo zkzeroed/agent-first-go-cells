@@ -45,8 +45,7 @@ local source and citation locator and verifies cited exported symbols.
 ## Editor support
 
 Zed loads the root guide and project skills in trusted worktrees. Its committed
-tasks expose the root and reference workflows, and its settings keep generated
-context visible.
+tasks expose the root workflow, and its settings keep generated context visible.
 
 VS Code task templates expose the same Taskfile workflow, including prompted
 cell IDs and scope expansion. Workspace settings enable root and nested

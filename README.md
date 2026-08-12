@@ -175,13 +175,13 @@ internal/cells/user-authenticate/
 | Scope check | `task verify-scope ID=<id>` | Reject changes outside that boundary |
 | Change impact | `task changed` | Git state and affected cells |
 | Handoff | `task ready` | Doctor, impact analysis, tests, and state |
-| Lint | `task lint` | Bootstrap tooling and reference module |
+| Lint | `task lint` | Bootstrap module |
 | Secret scan | `task secrets` | Working-tree scan before each commit |
 | Parser hardening | `task fuzz` | Bounded fuzzing for manifest input |
 
 Install the provided Git hooks with `task install-hooks`.
-`task test` covers the bootstrap tooling, application tests, and reference
-project; `task fuzz` is intentionally opt-in rather than part of every handoff.
+`task test` covers bootstrap tooling and application tests; `task fuzz` is
+intentionally opt-in rather than part of every handoff.
 `task secrets-history` scans all reachable Git history and is appropriate for
 an initial audit or an incident response.
 Run `task --list` for the complete command surface; [agent operations](docs/architecture/04-agent-operations.md)
@@ -194,11 +194,6 @@ metadata are the portable agent interface. Project-local skills cover
 navigation, building, modification, modern Go, and token-efficient command
 output.
 
-Zed users can run the root and reference workflows from `.zed/tasks.json`; its
-validation tasks save open buffers first. Zed Agent loads this repository's
-`AGENTS.md` and project-local skills in a trusted worktree. The generated
-`gen/` index and context packs intentionally remain visible for navigation.
-
 VS Code users can run the same workflow through `.vscode/tasks.json`, including
 input-backed context, dependency, scope, and scope-verification tasks. Its
 workspace settings enable root and cell-local `AGENTS.md` discovery and reuse
@@ -210,26 +205,6 @@ This repository targets **Go 1.26.5**. Prefer current standard-library and
 language idioms: `any`, `errors.Is`/`errors.AsType`, `slices`, `cmp.Or`,
 integer `range`, `t.Context()`, `wg.Go`, intentional `omitzero` tags, and
 `b.Loop()`.
-
-## Learn by running it
-
-The [reference project](examples/reference-project/README.md) contains six
-cells, API dependencies, a nested domain action, explicit wiring, and a
-cryptographic token flow. Its complete workflow is available from the root:
-
-```bash
-task cells ROOT=examples/reference-project
-task ready ROOT=examples/reference-project
-```
-
-The [library project](examples/library-project/README.md) demonstrates an
-exportable `greeting` package composing private helper cells:
-
-```bash
-task cells ROOT=examples/library-project
-task deps ID=greeting ROOT=examples/library-project
-task ready ROOT=examples/library-project
-```
 
 ## Architecture reference
 

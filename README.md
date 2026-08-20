@@ -197,11 +197,18 @@ output.
 VS Code users can run the same workflow through `.vscode/tasks.json`, including
 input-backed context, dependency, scope, and scope-verification tasks. Its
 workspace settings enable root and cell-local `AGENTS.md` discovery and reuse
-the existing `.agents/skills/` directly.
+the existing `.agents/skills/` directly. Open the repository root as a folder,
+install the recommended Go and YAML extensions, and use **Tasks: Run Task** to
+access the agent workflow. Go files are formatted and imports organized on
+save; cell manifests receive completion and validation from the local schema.
+These committed workspace files follow VS Code's official guidance for
+[workspace settings](https://code.visualstudio.com/docs/configure/settings),
+[tasks](https://code.visualstudio.com/docs/debugtest/tasks), and
+[extension recommendations](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_workspace-recommended-extensions).
 
 ## Modern Go
 
-This repository targets **Go 1.26.5**. Prefer current standard-library and
+This repository targets **Go 1.27.0**. Prefer current standard-library and
 language idioms: `any`, `errors.Is`/`errors.AsType`, `slices`, `cmp.Or`,
 integer `range`, `t.Context()`, `wg.Go`, intentional `omitzero` tags, and
 `b.Loop()`.

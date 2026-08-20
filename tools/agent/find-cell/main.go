@@ -17,25 +17,14 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/cellindex"
 )
-
-type CellRecord struct {
-	ID      string `json:"id"`
-	Path    string `json:"path"`
-	Kind    string `json:"kind,omitempty"`
-	Public  bool   `json:"public"`
-	Purpose string `json:"purpose"`
-}
-
-type CellIndex struct {
-	Cells []CellRecord `json:"cells"`
-}
 
 func main() {
 	root := flag.String("root", ".", "project root")
@@ -54,8 +43,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	var idx CellIndex
-	if err := json.Unmarshal(data, &idx); err != nil {
+	idx, err := cellindex.Decode(data)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing index: %v\n", err)
 		os.Exit(1)
 	}

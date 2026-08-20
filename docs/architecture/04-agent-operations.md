@@ -49,8 +49,12 @@ tasks expose the root workflow, and its settings keep generated context visible.
 
 VS Code task templates expose the same Taskfile workflow, including prompted
 cell IDs and scope expansion. Workspace settings enable root and nested
-`AGENTS.md` discovery; VS Code discovers `.agents/skills/` directly. Do not
-duplicate portable instructions in editor-specific files.
+`AGENTS.md` discovery; VS Code discovers `.agents/skills/` directly. The
+recommended Go extension formats with `gopls` using gofumpt rules and organizes
+imports on save. The recommended YAML extension validates every `cell.yaml`
+against `policy/manifest.schema.json`. `Agent: Ready` is the default build task
+and `Agent: Test` is the default test task. Do not duplicate portable
+instructions in editor-specific files.
 
 ## Multi-agent work
 

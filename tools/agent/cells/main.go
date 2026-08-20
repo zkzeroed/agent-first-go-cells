@@ -16,47 +16,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/cellindex"
 )
 
-type CellRecord struct {
-	ID           string             `json:"id"`
-	Path         string             `json:"path"`
-	Package      string             `json:"package"`
-	Kind         string             `json:"kind,omitempty"`
-	Public       bool               `json:"public"`
-	Purpose      string             `json:"purpose"`
-	Entrypoints  []string           `json:"entrypoints"`
-	Dependencies []string           `json:"dependencies"`
-	Validation   []string           `json:"validation"`
-	Conformance  *ConformanceRecord `json:"conformance,omitempty"`
-	Status       string             `json:"status"`
+type outputCell struct {
+	cellindex.Cell
+	Status string `json:"status"`
 }
 
-type ConformanceRecord struct {
-	Basis     string           `json:"basis"`
-	Status    string           `json:"status"`
-	Evidence  string           `json:"evidence"`
-	Citations []CitationRecord `json:"citations,omitempty"`
-	Rationale string           `json:"rationale,omitempty"`
-	Gaps      []string         `json:"gaps,omitempty"`
-}
-
-type CitationRecord struct {
-	File    string        `json:"file"`
-	Locator LocatorRecord `json:"locator"`
-	Symbols []string      `json:"symbols"`
-}
-
-type LocatorRecord struct {
-	Type    string `json:"type"`
-	Pages   []uint `json:"pages,omitempty"`
-	Heading string `json:"heading,omitempty"`
-}
-
-type CellIndex struct {
+type outputIndex struct {
 	SchemaVersion string       `json:"schemaVersion"`
 	Hash          string       `json:"hash"`
-	Cells         []CellRecord `json:"cells"`
+	Cells         []outputCell `json:"cells"`
 }
 
 func main() {
@@ -70,10 +42,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	for i := range idx.Cells {
-		idx.Cells[i].Status = "ok"
-	}
-
 	if *jsonOutput {
 		printJSON(idx)
 		return
@@ -81,29 +49,37 @@ func main() {
 	printTable(idx)
 }
 
-func readIndex(root string) (CellIndex, error) {
+func readIndex(root string) (cellindex.Index, error) {
 	data, err := os.ReadFile(filepath.Join(root, "gen", "cells.json"))
 	if err != nil {
-		return CellIndex{}, fmt.Errorf("error: gen/cells.json not found. Run 'task index' first")
+		return cellindex.Index{}, fmt.Errorf("error: gen/cells.json not found. Run 'task index' first")
 	}
 
-	var idx CellIndex
-	if err := json.Unmarshal(data, &idx); err != nil {
-		return CellIndex{}, fmt.Errorf("error parsing gen/cells.json: %w", err)
+	idx, err := cellindex.Decode(data)
+	if err != nil {
+		return cellindex.Index{}, fmt.Errorf("error parsing gen/cells.json: %w", err)
 	}
 	return idx, nil
 }
 
-func printJSON(idx CellIndex) {
+func printJSON(idx cellindex.Index) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	if err := enc.Encode(idx); err != nil {
+	if err := enc.Encode(withStatus(idx)); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing JSON: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func printTable(idx CellIndex) {
+func withStatus(idx cellindex.Index) outputIndex {
+	cells := make([]outputCell, len(idx.Cells))
+	for i, cell := range idx.Cells {
+		cells[i] = outputCell{Cell: cell, Status: "ok"}
+	}
+	return outputIndex{SchemaVersion: idx.SchemaVersion, Hash: idx.Hash, Cells: cells}
+}
+
+func printTable(idx cellindex.Index) {
 	if len(idx.Cells) == 0 {
 		fmt.Println("No cells found. Use 'task new-cell ID=<id>' to create one.")
 		return

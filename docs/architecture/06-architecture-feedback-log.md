@@ -51,6 +51,26 @@ Use this format for each entry:
 
 <!-- Add new entries below this line, newest first. -->
 
+### 2026-08-20 — Generated index readers need one strict schema owner
+
+- **Context:** Audited the agent navigation tools while adopting Go 1.27's
+  stricter `encoding/json/v2` decoder.
+- **What worked:** The generated index already carried an explicit schema
+  version and deterministic manifest hash.
+- **Difficulty:** `index`, `cells`, and `find-cell` independently declared
+  overlapping index structs, so fields could drift and partial readers could
+  not safely reject unknown members.
+- **Cause:** The persisted index shape had no shared Go package even though it
+  was consumed by multiple agent commands.
+- **Fix applied:** Added `tools/agent/cellindex` as the single persisted schema
+  owner and made every index reader reject duplicate names, invalid UTF-8,
+  unknown members, incomplete top-level data, and incompatible schema versions.
+- **Suggested improvement:** Keep command-specific presentation fields outside
+  the persisted model and change `cellindex.SchemaVersion` deliberately whenever
+  the generated wire format becomes incompatible.
+- **Files/commands:** `tools/agent/cellindex`; `tools/agent/index`;
+  `tools/agent/cells`; `tools/agent/find-cell`; `task check-index`.
+
 ### 2026-08-12 — Index freshness must include its schema contract
 
 - **Context:** Orienting a new repository regenerated an otherwise

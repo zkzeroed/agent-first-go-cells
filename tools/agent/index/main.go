@@ -33,54 +33,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/zkzeroed/agent-first-go-cells/tools/agent/cellindex"
 	"github.com/zkzeroed/agent-first-go-cells/tools/agent/manifest"
 )
 
-type CellRecord struct {
-	ID           string             `json:"id"`
-	Path         string             `json:"path"`
-	Package      string             `json:"package"`
-	Kind         string             `json:"kind,omitempty"`
-	Public       bool               `json:"public"`
-	Purpose      string             `json:"purpose"`
-	Entrypoints  []string           `json:"entrypoints"`
-	Dependencies []string           `json:"dependencies"`
-	Validation   []string           `json:"validation"`
-	Conformance  *ConformanceRecord `json:"conformance,omitempty"`
-}
-
-// ConformanceRecord makes a public package's research provenance and known
-// limitations available without reparsing its source manifest.
-type ConformanceRecord struct {
-	Basis     string           `json:"basis"`
-	Status    string           `json:"status"`
-	Evidence  string           `json:"evidence"`
-	Citations []CitationRecord `json:"citations,omitempty"`
-	Rationale string           `json:"rationale,omitempty"`
-	Gaps      []string         `json:"gaps,omitempty"`
-}
-
-type CitationRecord struct {
-	File    string        `json:"file"`
-	Locator LocatorRecord `json:"locator"`
-	Symbols []string      `json:"symbols"`
-}
-
-type LocatorRecord struct {
-	Type    string `json:"type"`
-	Pages   []uint `json:"pages,omitempty"`
-	Heading string `json:"heading,omitempty"`
-}
-
-type CellIndex struct {
-	SchemaVersion string       `json:"schemaVersion"`
-	Hash          string       `json:"hash"`
-	Cells         []CellRecord `json:"cells"`
-}
-
 const maxContextGuideBytes = 6_000
-
-const indexSchemaVersion = "agent-first/v1"
 
 func main() {
 	root, check, jsonOutput, err := parseArgs(os.Args[1:])
@@ -180,14 +137,14 @@ func printJSON(root string) error {
 	return nil
 }
 
-func buildIndex(manifests []manifest.Manifest) CellIndex {
-	index := CellIndex{
-		SchemaVersion: indexSchemaVersion,
+func buildIndex(manifests []manifest.Manifest) cellindex.Index {
+	index := cellindex.Index{
+		SchemaVersion: cellindex.SchemaVersion,
 		Hash:          "sha256:" + computeHash(manifests),
-		Cells:         []CellRecord{},
+		Cells:         []cellindex.Cell{},
 	}
 	for _, m := range manifests {
-		index.Cells = append(index.Cells, CellRecord{
+		index.Cells = append(index.Cells, cellindex.Cell{
 			ID:           m.ID,
 			Path:         m.Dir,
 			Package:      strings.ReplaceAll(m.ID, "-", ""),
@@ -203,13 +160,13 @@ func buildIndex(manifests []manifest.Manifest) CellIndex {
 	return index
 }
 
-func conformanceRecord(value manifest.Conformance) *ConformanceRecord {
+func conformanceRecord(value manifest.Conformance) *cellindex.Conformance {
 	if value.Basis == "" {
 		return nil
 	}
-	record := &ConformanceRecord{Basis: value.Basis, Status: value.Status, Evidence: value.Evidence, Rationale: value.Rationale, Gaps: slices.Clone(value.Gaps)}
+	record := &cellindex.Conformance{Basis: value.Basis, Status: value.Status, Evidence: value.Evidence, Rationale: value.Rationale, Gaps: slices.Clone(value.Gaps)}
 	for _, citation := range value.Citations {
-		record.Citations = append(record.Citations, CitationRecord{File: citation.File, Locator: LocatorRecord{Type: citation.Locator.Type, Pages: slices.Clone(citation.Locator.Pages), Heading: citation.Locator.Heading}, Symbols: slices.Clone(citation.Symbols)})
+		record.Citations = append(record.Citations, cellindex.Citation{File: citation.File, Locator: cellindex.Locator{Type: citation.Locator.Type, Pages: slices.Clone(citation.Locator.Pages), Heading: citation.Locator.Heading}, Symbols: slices.Clone(citation.Symbols)})
 	}
 	return record
 }
@@ -230,13 +187,9 @@ func checkStale(root string) error {
 		return fmt.Errorf("cannot read existing index: %w", err)
 	}
 
-	var idx CellIndex
-	if err := json.Unmarshal(existing, &idx); err != nil {
+	idx, err := cellindex.Decode(existing)
+	if err != nil {
 		return fmt.Errorf("cannot parse existing index: %w", err)
-	}
-
-	if idx.SchemaVersion != indexSchemaVersion {
-		return fmt.Errorf("schema version mismatch: existing=%s expected=%s", idx.SchemaVersion, indexSchemaVersion)
 	}
 	if idx.Hash != currentHash {
 		return fmt.Errorf("hash mismatch: existing=%s current=%s", idx.Hash, currentHash)
@@ -257,7 +210,7 @@ func computeHash(manifests []manifest.Manifest) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func writeIndex(root string, index CellIndex) error {
+func writeIndex(root string, index cellindex.Index) error {
 	if err := os.MkdirAll(filepath.Join(root, "gen"), 0o755); err != nil {
 		return err
 	}

@@ -23,7 +23,7 @@ func TestValidateImportEnforcesInternalAllowList(t *testing.T) {
 
 func TestPolicyWithoutCustomRulesStillRejectsPrivateImplementationImport(t *testing.T) {
 	root := t.TempDir()
-	writeImportFixture(t, root, "go.mod", "module example.com/test\n\ngo 1.26.5\n")
+	writeImportFixture(t, root, "go.mod", "module example.com/test\n\ngo 1.27.0\n")
 	writeImportFixture(t, root, "cmd/tool/main.go", "package main\n\nimport _ \"example.com/test/internal/cells/helper\"\n")
 	writeImportFixture(t, root, "internal/cells/helper/helper.go", "package helper\n")
 

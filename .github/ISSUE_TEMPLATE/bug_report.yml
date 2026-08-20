@@ -47,7 +47,7 @@ body:
     id: go-version
     attributes:
       label: Go version
-      placeholder: go version go1.26.4 linux/amd64
+      placeholder: go version go1.27.0 linux/amd64
 
   - type: textarea
     id: context

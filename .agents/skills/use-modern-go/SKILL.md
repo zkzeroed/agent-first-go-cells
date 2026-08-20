@@ -23,7 +23,7 @@ DO NOT search for go.mod files or try to detect the version yourself. Use ONLY t
 
 **If version is "unknown":**
 - Say: "Could not detect Go version in this repository"
-- Use AskUserQuestion: "Which Go version should I target?" → [1.23] / [1.24] / [1.25] / [1.26]
+- Use AskUserQuestion: "Which Go version should I target?" → [1.24] / [1.25] / [1.26] / [1.27]
 
 **When writing Go code**, use ALL features from this document up to the target version:
 - Prefer modern built-ins and packages (`slices`, `maps`, `cmp`) over legacy patterns
@@ -305,3 +305,33 @@ if pathErr, ok := errors.AsType[*os.PathError](err); ok {
 - After a Go upgrade or deliberate modernization pass, run `go fix ./...`,
   review its diff, then run the relevant tests. It applies safe modernizers but
   writes source files, so do not run it as routine feature validation.
+
+### Go 1.27+
+
+- Generic methods may declare their own type parameters. Use them when the type
+  namespace materially improves API cohesion; do not convert package-level
+  generic functions without a concrete benefit. Interface methods still cannot
+  declare type parameters, and a generic concrete method does not implement a
+  non-generic interface method with the same name.
+- Generic function type inference now works in every assignment and conversion
+  context. Omit explicit type arguments when the destination function type
+  makes them unambiguous and the inferred form remains clearer.
+- Struct literal keys may use valid field selectors. Prefer this only when it
+  makes initialization clearer than constructing nested values explicitly.
+- `strings.CutLast` and `bytes.CutLast` split around the final occurrence of a
+  separator. Prefer them to `LastIndex` followed by manual slicing.
+- In `testing/synctest` tests, use `synctest.Sleep` when the test needs both a
+  fake-clock sleep and a wait for the bubble to become durably blocked.
+- `url.URL.Clone` and `url.Values.Clone` provide deep copies; prefer them to
+  hand-written copy loops.
+- For new UUID generation or parsing, consider the standard-library `uuid`
+  package before adding a third-party dependency.
+- `encoding/json/v2` and `encoding/json/jsontext` are available for code that
+  needs their stricter defaults or configurable APIs. Do not migrate working
+  `encoding/json` code mechanically: the v1 API remains supported and preserves
+  behavior, apart from possible differences in exact error text.
+- Run `go fix ./...` after upgrading. Go 1.27 adds the `atomictypes`, `embedlit`,
+  `slicesbackward`, and `unsafefuncs` modernizers.
+- `go test` now runs the `stdversion` vet check by default, so keep every file's
+  standard-library usage within the version selected by its module and build
+  constraints.

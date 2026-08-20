@@ -23,7 +23,11 @@
       "command": "task",
       "args": ["ready"],
       "options": { "cwd": "${workspaceFolder}" },
-      "problemMatcher": []
+      "problemMatcher": ["$go"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
       "label": "Agent: Doctor",
@@ -71,7 +75,11 @@
       "command": "task",
       "args": ["test"],
       "options": { "cwd": "${workspaceFolder}" },
-      "problemMatcher": ["$go"]
+      "problemMatcher": ["$go"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
     },
     {
       "label": "Agent: Lint",
@@ -154,6 +162,14 @@
       "problemMatcher": []
     },
     {
+      "label": "Agent: Scaffold Domain",
+      "type": "process",
+      "command": "task",
+      "args": ["scaffold-domain", "ID=${input:newCellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
       "label": "Agent: New Public Package",
       "type": "process",
       "command": "task",
@@ -168,6 +184,22 @@
       "args": ["conformance", "ID=${input:cellId}"],
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
+    },
+    {
+      "label": "Agent: Validate Cell",
+      "type": "process",
+      "command": "task",
+      "args": ["validate-cell", "ID=${input:cellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Agent: Test Cell",
+      "type": "process",
+      "command": "task",
+      "args": ["test-cell", "ID=${input:cellId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$go"]
     }
   ],
   "inputs": [

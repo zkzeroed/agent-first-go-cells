@@ -43,7 +43,7 @@ func TestScaffoldersRejectExistingCellPaths(t *testing.T) {
 
 func assertScaffoldManifestValid(t *testing.T, root string) {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/scaffold-test\n\ngo 1.26.5\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/scaffold-test\n\ngo 1.27.0\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	manifests, err := manifest.FindAllAt(root)

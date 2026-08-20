@@ -65,7 +65,7 @@ func TestParseValidatesLibraryConformance(t *testing.T) {
 	if _, err := Parse(missingRationale); err == nil || !strings.Contains(err.Error(), "rationale") {
 		t.Fatalf("Parse() error = %v, want rationale validation error", err)
 	}
-	withoutConformance := strings.Split(valid, "conformance:")[0]
+	withoutConformance, _, _ := strings.Cut(valid, "conformance:")
 	if _, err := Parse(withoutConformance); err == nil || !strings.Contains(err.Error(), "conformance basis") {
 		t.Fatalf("Parse() error = %v, want required conformance error", err)
 	}
@@ -151,7 +151,7 @@ func TestValidateSourceAtVerifiesConformanceEvidence(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module example.com/test\n\ngo 1.26.5\n")
+	write("go.mod", "module example.com/test\n\ngo 1.27.0\n")
 	write("policy/architecture.yaml", "libraryPackages:\n  field: field\n")
 	write("field/AGENTS.md", "# Guide\n")
 	write("field/field.go", "package field\n\nfunc Reduce(value int) int { return value }\n")
@@ -212,7 +212,7 @@ func TestValidateSourceAtRejectsMismatchedEntrypointMetadata(t *testing.T) {
 
 func writeManifestFixture(t *testing.T, root, id string, dependencies []string, source string) {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/test\n\ngo 1.26.5\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/test\n\ngo 1.27.0\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	dir := filepath.Join(root, "internal", "cells", id)
